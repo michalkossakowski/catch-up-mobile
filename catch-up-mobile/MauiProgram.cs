@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using catch_up_mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace catch_up_mobile
 {
@@ -20,6 +21,19 @@ namespace catch_up_mobile
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
+            //----------- Custom Section Start -----------
+            // Konfiguracja HttpClient z ignorowaniem błędów certyfikatu SSL
+            var httpClientHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+            };
+            builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
+            {
+                BaseAddress = new Uri("https://localhost:7097/")
+            });
+            // Dodanie usługi FAQService
+            builder.Services.AddScoped<FAQService>();
+            // ----------- Custom Section End -----------
 
             return builder.Build();
         }

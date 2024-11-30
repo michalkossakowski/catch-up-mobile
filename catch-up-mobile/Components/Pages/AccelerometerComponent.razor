@@ -1,0 +1,53 @@
+﻿@page "/accelerometer"
+@inject Microsoft.AspNetCore.Components.NavigationManager Navigation
+
+@code {
+    private string xValue = "-";
+    private string yValue = "-";
+    private string zValue = "-";
+    private bool isMonitoring = false;
+
+    // Rozpocznij monitorowanie akcelerometru
+    private void StartAccelerometer()
+    {
+        if (!Accelerometer.IsMonitoring)
+        {
+            Accelerometer.ReadingChanged += OnReadingChanged;
+            Accelerometer.Start(SensorSpeed.UI);
+            isMonitoring = true;
+        }
+    }
+
+    // Zatrzymaj monitorowanie akcelerometru
+    private void StopAccelerometer()
+    {
+        if (Accelerometer.IsMonitoring)
+        {
+            Accelerometer.Stop();
+            Accelerometer.ReadingChanged -= OnReadingChanged;
+            isMonitoring = false;
+        }
+    }
+
+    // Obsługa zdarzeń odczytu akcelerometru
+    private void OnReadingChanged(object sender, AccelerometerChangedEventArgs e)
+    {
+        xValue = e.Reading.Acceleration.X.ToString("F2");
+        yValue = e.Reading.Acceleration.Y.ToString("F2");
+        zValue = e.Reading.Acceleration.Z.ToString("F2");
+
+        InvokeAsync(StateHasChanged); // Uaktualnij UI po odczycie
+    }
+
+    // Sprzątanie po zakończeniu używania komponentu
+    public void Dispose()
+    {
+        StopAccelerometer();
+    }
+}
+<h3>Accelerometer Data</h3>
+<p>X: @xValue</p>
+<p>Y: @yValue</p>
+<p>Z: @zValue</p>
+<button @onclick="StartAccelerometer" disabled="@isMonitoring">Start</button>
+<button @onclick="StopAccelerometer" disabled="!isMonitoring">Stop</button>

@@ -1,0 +1,22 @@
+﻿@page "/faqmanage"
+
+@inject NavigationManager NavigationManager
+
+<div class="text-center">
+
+    <h2>FAQ Manage</h2>
+
+    <div class="m-3">
+        <button type="button" class="btn btn-primary" @onclick="OpenFaqAdd">Add new FAQ</button>
+    </div>
+
+    <FaqPage/>
+</div>
+
+
+@code {
+    private async Task OpenFaqAdd()
+    {
+        NavigationManager.NavigateTo("/faq/add");
+    }
+}

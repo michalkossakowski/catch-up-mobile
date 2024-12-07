@@ -1,5 +1,4 @@
-﻿using catch_up_mobile.Services;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace catch_up_mobile
 {
@@ -31,8 +30,6 @@ namespace catch_up_mobile
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });
-            // Dodanie usługi FaqService
-            builder.Services.AddScoped<FaqService>();
             // ----------- Custom Section End -----------
 
             return builder.Build();

@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
+    <div class="sidebar fixed-top" style="position:sticky; top: 0">
         <NavMenu />
     </div>
 
@@ -10,4 +10,10 @@
             @Body
         </article>
     </main>
+
+
+    <footer className="m-5">
+        <hr />
+        <div className="text-muted p-5">© 2024 UnhandledException</div>
+    </footer>
 </div>

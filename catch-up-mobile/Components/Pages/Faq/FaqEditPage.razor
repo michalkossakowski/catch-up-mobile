@@ -1,0 +1,95 @@
+﻿@page "/faq/edit/{editedFaqId:int}"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+@using catch_up_mobile.Dtos
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations.Schema
+
+<div class="container text-start">
+
+    <h2 class="text-center">Edit FAQ [@editedFaqId]</h2>
+
+    <EditForm Model="faqModel" OnValidSubmit="SaveFaq">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label for="Title">Title:</label>
+            <InputText id="Title" class="form-control" @bind-Value="faqModel.Title" placeholder="Enter title ..." />
+            <ValidationMessage For="@(() => faqModel.Title)" />
+        </div>
+        <br />
+        <div>
+            <label for="Answer">Answer:</label>
+            <InputTextArea rows="8" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
+            <ValidationMessage For="@(() => faqModel.Answer)" />
+        </div>
+        <br />
+        <button type="button" class="btn btn-primary text-center" data-bs-toggle="modal" data-bs-target="#saveConfirmationModal">
+            Save FAQ
+        </button>
+        <button type="button" class="btn btn-danger text-center" @onclick="Cancel">Cancel</button>
+    </EditForm>
+</div>
+
+<div class="modal fade text-center" id="saveConfirmationModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveModalLabel">Confirm Save</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5>Are you sure you want to save these changes?</h5>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="ConfirmSaveFaq">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int editedFaqId { get; set; }
+
+    FaqDto editedFaq { get; set; }
+
+    private FaqModel faqModel = new FaqModel();
+    private class FaqModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Title must be at least 3 characters long")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Answer is required")]
+        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Answer must be at least 3 characters long")]
+        public string Answer { get; set; }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
+        faqModel.Title = editedFaq.Title;
+        faqModel.Answer = editedFaq.Answer;
+    }
+
+    private async Task ConfirmSaveFaq()
+    {
+        await SaveFaq();
+    }
+
+    private async Task SaveFaq()
+    {
+        await _httpClient.PutAsJsonAsync($"/api/faq/edit/{editedFaqId}", faqModel);
+        NavigationManager.NavigateTo("/faqmanage");
+    }
+
+    private async Task Cancel()
+    {
+        NavigationManager.NavigateTo("/faqmanage");
+    }
+}

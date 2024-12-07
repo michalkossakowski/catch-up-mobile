@@ -31,8 +31,8 @@ namespace catch_up_mobile
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });
-            // Dodanie usługi FAQService
-            builder.Services.AddScoped<FAQService>();
+            // Dodanie usługi FaqService
+            builder.Services.AddScoped<FaqService>();
             // ----------- Custom Section End -----------
 
             return builder.Build();

@@ -1,0 +1,43 @@
+﻿@page "/faq"
+@inject catch_up_mobile.Services.FaqService FaqService
+@using catch_up_mobile.Dtos
+
+<h2 class="text-center">Frequently Asked Questions</h2>
+
+@if (faqs == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="accordion" id="accordionExample">
+        @for (int i = 0; i < faqs.Count; i++)
+        {
+            var faq = faqs[i];
+            var collapseId = $"collapse{i}";
+            var headingId = $"heading{i}";
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                        <strong>@faq.Title</strong>
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        @faq.Answer
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<FaqDto> faqs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        faqs = await FaqService.GetFAQsAsync();
+    }
+}

@@ -1,20 +1,20 @@
 ﻿using System.Net.Http.Json;
-using catch_up_mobile.Models;
+using catch_up_mobile.Dtos;
 
 namespace catch_up_mobile.Services
 {
-    public class FAQService
+    public class FaqService
     {
         private readonly HttpClient _httpClient;
 
-        public FAQService(HttpClient httpClient)
+        public FaqService(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
 
-        public async Task<List<FAQ>> GetFAQsAsync()
+        public async Task<List<FaqDto>> GetFAQsAsync()
         {
-            return await _httpClient.GetFromJsonAsync<List<FAQ>>("api/faq/getall");
+            return await _httpClient.GetFromJsonAsync<List<FaqDto>>("api/faq/getall");
         }
     }
 }

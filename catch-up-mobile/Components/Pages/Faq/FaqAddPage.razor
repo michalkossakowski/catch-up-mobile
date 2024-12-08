@@ -26,29 +26,9 @@
             <ValidationMessage For="@(() => faqModel.Answer)" />
         </div>
         <br />
-        <button type="button" class="btn btn-primary text-center" data-bs-toggle="modal" data-bs-target="#saveConfirmationModal">
-            Add FAQ
-        </button>
+        <button type="submit" class="btn btn-primary">Add FAQ</button>
     </EditForm>
 
-</div>
-
-<div class="modal fade text-center" id="saveConfirmationModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="saveModalLabel">Confirm Adding</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h5>Are you sure you want to add new FAQ?</h5>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="ConfirmAddFaq">Add</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 @code {
@@ -64,11 +44,6 @@
         public string Answer { get; set; }
         
         // Waiting for materials
-    }
-
-    private async Task ConfirmAddFaq()
-    {
-        await AddFaq();
     }
 
     private async Task AddFaq()

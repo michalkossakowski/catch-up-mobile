@@ -26,29 +26,9 @@
             <ValidationMessage For="@(() => faqModel.Answer)" />
         </div>
         <br />
-        <button type="button" class="btn btn-primary text-center" data-bs-toggle="modal" data-bs-target="#saveConfirmationModal">
-            Save FAQ
-        </button>
+        <button type="submit" class="btn btn-primary">Save FAQ</button>
         <button type="button" class="btn btn-danger text-center" @onclick="Cancel">Cancel</button>
     </EditForm>
-</div>
-
-<div class="modal fade text-center" id="saveConfirmationModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="saveModalLabel">Confirm Save</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h5>Are you sure you want to save these changes?</h5>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="ConfirmSaveFaq">Save</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 @code {
@@ -75,11 +55,6 @@
         editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
         faqModel.Title = editedFaq.Title;
         faqModel.Answer = editedFaq.Answer;
-    }
-
-    private async Task ConfirmSaveFaq()
-    {
-        await SaveFaq();
     }
 
     private async Task SaveFaq()

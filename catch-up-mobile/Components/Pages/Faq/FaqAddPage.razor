@@ -1,0 +1,54 @@
+﻿@page "/faq/add"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+@using catch_up_mobile.Dtos
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations.Schema
+
+<div class="container text-start">
+
+    <h2 class="text-center">Add New FAQ</h2>
+
+    <EditForm Model="faqModel" OnValidSubmit="AddFaq">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label for="Title">Title:</label>
+            <InputText id="Title" class="form-control" @bind-Value="faqModel.Title" placeholder="Enter title ..." />
+            <ValidationMessage For="@(() => faqModel.Title)" />
+        </div>
+        <br />
+        <div>
+            <label for="Answer">Answer:</label>
+            <InputTextArea rows="8" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
+            <ValidationMessage For="@(() => faqModel.Answer)" />
+        </div>
+        <br />
+        <button type="submit" class="btn btn-primary">Add FAQ</button>
+    </EditForm>
+
+</div>
+
+@code {
+    private FaqModel faqModel = new FaqModel();
+    private class FaqModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Title must be at least 3 characters long")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Answer is required")]
+        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Answer must be at least 3 characters long")]
+        public string Answer { get; set; }
+        
+        // Waiting for materials
+    }
+
+    private async Task AddFaq()
+    {
+        await _httpClient.PostAsJsonAsync("api/faq/add", faqModel);
+        NavigationManager.NavigateTo("/faqmanage");
+    }
+}

@@ -1,0 +1,42 @@
+﻿@page "/faqmanage"
+@using catch_up_mobile.Dtos
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+<h3>Component1</h3>
+
+@code {
+   /* [Parameter] public int? materialId { get; set; }
+    [Parameter] public bool showRemoveFile { get; set; }
+    [Parameter] public bool showDownloadFile { get; set; }
+    [Parameter] public bool showAddingFile { get; set; }
+    [Parameter] public EventCallback<int> materialCreated { get; set; }
+
+    private MaterialDto material { get; set; }
+    private string? materialName { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (materialId == null || materialId == 0)
+        {
+            material = null;
+        }
+        else
+        {
+            await LoadMaterial(materialId.Value);
+        }
+    }
+
+
+    private async Task LoadMaterial(int materialId)
+    {
+        try
+        {
+            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId}");
+        }
+        catch (Exception ex)
+        {
+            // ShowErrorMessage($"Material fetching error: {ex.Message}");
+        }
+    }*/
+}

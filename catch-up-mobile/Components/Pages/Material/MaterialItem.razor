@@ -1,42 +1,98 @@
-﻿@page "/faqmanage"
+﻿@page "/materialItem/{materialId:int?}"
+@using System.Diagnostics
 @using catch_up_mobile.Dtos
 
 @inject HttpClient _httpClient
-@inject NavigationManager NavigationManager
-<h3>Component1</h3>
 
+<section>
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="ClearErrorMessage"></button>
+        </div>
+    }
+    @if (material != null)
+    {
+        <ul class="list-group">
+            @foreach (var file in material.Files)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    @file.Name
+                    <div>
+                        @if (showRemoveFile)
+                        {
+                            <span>ShowRemoveFile</span>
+                            @* <a class="pe-2" @onclick="() => RemoveFile(file.Id)"> *@
+                            @*     <i class="bi bi-trash3 deleteIcon hoverIcon icon-size"></i> *@
+                            @* </a> *@
+                        }
+                        @if (showDownloadFile)
+                        {
+                            <span>ShowDownloadFile</span>
+                            @* <a @onclick="() => DownloadFile(file.Id)"> *@
+                            @*     <i class="bi bi-file-earmark-arrow-down downloadIcon hoverIcon icon-size"></i> *@
+                            @* </a> *@
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+        @if (showAddingFile)
+        {
+            <span>showAddingFile</span>
+        }
+    }
+</section>
 @code {
-   /* [Parameter] public int? materialId { get; set; }
+    [Parameter] public int? materialId { get; set; }
     [Parameter] public bool showRemoveFile { get; set; }
     [Parameter] public bool showDownloadFile { get; set; }
     [Parameter] public bool showAddingFile { get; set; }
     [Parameter] public EventCallback<int> materialCreated { get; set; }
 
     private MaterialDto material { get; set; }
-    private string? materialName { get; set; }
+    private string? errorMessage { get; set; }
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
         if (materialId == null || materialId == 0)
         {
             material = null;
+            ShowErrorMessage($"Material index is null:");
         }
         else
         {
-            await LoadMaterial(materialId.Value);
+            await LoadMaterial();
         }
     }
 
-
-    private async Task LoadMaterial(int materialId)
+    private async Task LoadMaterial()
     {
         try
         {
-            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId}");
+            var x = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
+            material = x;
+            Debug.WriteLine(x);
+            Debug.WriteLine(x);
+
+            // Debug.WriteLine(x.message);
+            // Debug.WriteLine(x.materialDto);
+
         }
         catch (Exception ex)
         {
-            // ShowErrorMessage($"Material fetching error: {ex.Message}");
+            ShowErrorMessage($"Material fetching error: {ex.Message}");
         }
-    }*/
+    }
+
+    private void ShowErrorMessage(string message)
+    {
+        errorMessage = message;
+    }
+
+    private void ClearErrorMessage()
+    {
+        errorMessage = null;
+    }
 }

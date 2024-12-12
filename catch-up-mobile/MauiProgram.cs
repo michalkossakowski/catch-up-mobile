@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
+using Plugin.Maui.Audio;
 
 namespace catch_up_mobile
 {
@@ -33,6 +35,13 @@ namespace catch_up_mobile
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });
+
+            //Record Audio
+            builder.Services.AddSingleton(AudioManager.Current);
+
+            //File Saver
+            builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
+
             // ----------- Custom Section End -----------
 
             return builder.Build();

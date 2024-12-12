@@ -1,0 +1,67 @@
+﻿@page "/recorder"
+@using Plugin.Maui.Audio
+@using CommunityToolkit.Maui.Storage
+@inject IAudioManager AudioManager
+@inject IFileSaver FileSaver
+
+
+<div class="container text-center">
+
+    <h1>Recorder</h1>
+
+    <div class="m-5">
+    <button class="btn btn-primary" @onclick="StartRecording">Start</button>
+    <button class="btn btn-danger" @onclick="StopRecording">Stop</button>
+    <button class="btn btn-info" @onclick="PlayRecording">Play</button>
+    <button class="btn btn-success" @onclick="SaveRecording">Save</button>
+    </div>
+
+    <h4>@statusMessage</h4>
+</div>
+
+@code {
+    private IAudioRecorder recorder;
+    private IAudioSource audioSource;
+    public string statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        statusMessage = "Welcome in recorder";
+        await RequestMicrophonePermission();
+        recorder = AudioManager.CreateRecorder();
+    }
+
+    private async Task RequestMicrophonePermission()
+    {
+        var status = await Permissions.RequestAsync<Permissions.Microphone>();
+    }
+
+    public async Task StartRecording()
+    {
+        statusMessage = "Recording ...";
+        await recorder.StartAsync();
+    }
+
+    public async Task StopRecording()
+    {
+        statusMessage = "Recording captured";
+        audioSource = await recorder.StopAsync();
+    }
+
+    private async Task PlayRecording()
+    {
+        if (audioSource != null)
+        {
+            var player = AudioManager.CreatePlayer(audioSource.GetAudioStream());
+            player.Play();
+        }
+    }
+
+    private async Task SaveRecording()
+    {
+        await FileSaver.SaveAsync(
+            $"Audio_{DateTime.Now.ToString("dd-MM-yyyy_HH:mm:ss")}.mp3",
+            audioSource.GetAudioStream()
+        );
+    }
+}

@@ -1,19 +1,15 @@
 ﻿@page "/materialItem/{materialId:int?}"
 @using System.Diagnostics
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Storage
 @using catch_up_mobile.Dtos
 
 @inject HttpClient _httpClient
 
 <section>
-    @if (errorMessage != null)
-    {
-        <div class="alert alert-danger" role="alert">
-            @errorMessage
-            <button type="button" class="btn-close" aria-label="Close" @onclick="ClearErrorMessage"></button>
-        </div>
-    }
     @if (material != null)
     {
+        <h2>@material.Name</h2>
         <ul class="list-group">
             @foreach (var file in material.Files)
             {
@@ -22,17 +18,15 @@
                     <div>
                         @if (showRemoveFile)
                         {
-                            <span>ShowRemoveFile</span>
-                            @* <a class="pe-2" @onclick="() => RemoveFile(file.Id)"> *@
-                            @*     <i class="bi bi-trash3 deleteIcon hoverIcon icon-size"></i> *@
-                            @* </a> *@
+                            <a class="pe-2" @onclick="() => RemoveFile(file.Id)">
+                                <i class="bi bi-trash3 deleteIcon"></i>
+                            </a>
                         }
                         @if (showDownloadFile)
                         {
-                            <span>ShowDownloadFile</span>
-                            @* <a @onclick="() => DownloadFile(file.Id)"> *@
-                            @*     <i class="bi bi-file-earmark-arrow-down downloadIcon hoverIcon icon-size"></i> *@
-                            @* </a> *@
+                            <a @onclick="() => DownloadFile(file.Id)">
+                                <i class="bi bi-file-earmark-arrow-down downloadIcon"></i>
+                            </a>
                         }
                     </div>
                 </li>
@@ -43,56 +37,122 @@
             <span>showAddingFile</span>
         }
     }
+    else
+    {
+        <div class="input-group mb-3">
+            <input type="text" placeholder="Material's name" class="form-control" @bind="materialName" />
+            <button class="btn btn-outline-secondary" type="button" @onclick="CreateMaterial">
+                Create
+            </button>
+        </div>
+    }
 </section>
 @code {
     [Parameter] public int? materialId { get; set; }
-    [Parameter] public bool showRemoveFile { get; set; }
-    [Parameter] public bool showDownloadFile { get; set; }
-    [Parameter] public bool showAddingFile { get; set; }
+    [Parameter] public bool showRemoveFile { get; set; } = false;
+    [Parameter] public bool showDownloadFile { get; set; } = false;
+    [Parameter] public bool showAddingFile { get; set; } = false;
     [Parameter] public EventCallback<int> materialCreated { get; set; }
 
     private MaterialDto material { get; set; }
+    private string? materialName { get; set; }
     private string? errorMessage { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         if (materialId == null || materialId == 0)
-        {
             material = null;
-            ShowErrorMessage($"Material index is null:");
-        }
         else
-        {
             await LoadMaterial();
-        }
     }
 
     private async Task LoadMaterial()
     {
         try
         {
-            var x = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
-            material = x;
-            Debug.WriteLine(x);
-            Debug.WriteLine(x);
-
-            // Debug.WriteLine(x.message);
-            // Debug.WriteLine(x.materialDto);
-
+            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
         }
         catch (Exception ex)
         {
-            ShowErrorMessage($"Material fetching error: {ex.Message}");
+            await Toast.Make($"Material fetching error: {ex.Message}").Show();
         }
     }
 
-    private void ShowErrorMessage(string message)
+    private async Task CreateMaterial()
     {
-        errorMessage = message;
+        if (!string.IsNullOrEmpty(materialName))
+        {
+            try
+            {
+                var newMaterial = new MaterialDto { Name = materialName };
+                var response = await _httpClient.PostAsJsonAsync($"api/material/Create", newMaterial);
+                var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
+                if (responseContent != null)
+                {
+                    materialId = responseContent.Id;
+                    materialName = responseContent.Name;
+                    material = responseContent;
+
+                    if (materialId.HasValue)
+                        await materialCreated.InvokeAsync(materialId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in creating material {ex.Message}").Show();
+            }
+        }
+    }
+    private async Task RemoveFile(int fileId)
+    {
+        try
+        {
+            if (material != null)
+            {
+                await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
+                material.Files = material.Files.Where(f => f.Id != fileId).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error removing file {ex.Message}").Show();
+        }
     }
 
-    private void ClearErrorMessage()
+    private async Task DownloadFile(int fileId)
     {
-        errorMessage = null;
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/file/Download/{fileId}", HttpCompletionOption.ResponseHeadersRead);
+            var file = material?.Files.FirstOrDefault(f => f.Id == fileId);
+
+            if (response.IsSuccessStatusCode && file != null)
+            {
+                await using var stream = await response.Content.ReadAsStreamAsync();
+
+                var fileName = $"{file.Name}";
+                // var saverProgress = new Progress<double>(percentage => ProgressBar.ProgressProperty = percentage);
+                var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream);
+                // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
+
+
+                if (fileSaverResult.IsSuccessful)
+                {
+                    await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
+                }
+                else
+                {
+                    await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
+                }
+            }
+            else
+            {
+                await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error downloading or saving the file: {ex.Message}").Show();
+        }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace catch_up_mobile.Dtos
+﻿namespace catch_up_mobile.Dtos
 {
     public class MaterialDto
     {

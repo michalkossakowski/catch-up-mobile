@@ -1,0 +1,60 @@
+﻿@page "/FileAdd/{materialId:int?}"
+@using System.Diagnostics
+@using catch_up_mobile.Dtos
+
+@inject HttpClient _httpClient
+
+<section>
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="ClearErrorMessage"></button>
+        </div>
+    }
+</section>
+@code {
+    [Parameter] public int? materialId { get; set; }
+    [Parameter] public bool showRemoveFile { get; set; }
+    [Parameter] public bool showDownloadFile { get; set; }
+    [Parameter] public bool showAddingFile { get; set; }
+    [Parameter] public EventCallback<int> materialCreated { get; set; }
+
+    private MaterialDto material { get; set; }
+    private string? errorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (materialId == null || materialId == 0)
+        {
+            material = null;
+            ShowErrorMessage($"Material index is null:");
+        }
+        else
+        {
+            await LoadMaterial();
+        }
+    }
+
+    private async Task LoadMaterial()
+    {
+        try
+        {
+            var x = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Material fetching error: {ex.Message}");
+        }
+    }
+
+    private void ShowErrorMessage(string message)
+    {
+        errorMessage = message;
+    }
+
+    private void ClearErrorMessage()
+    {
+        errorMessage = null;
+    }
+}

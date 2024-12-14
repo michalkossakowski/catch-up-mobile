@@ -8,11 +8,6 @@
 
 </section>
 @code {
-    [Parameter] public int? materialId { get; set; }
-    [Parameter] public bool showRemoveFile { get; set; }
-    [Parameter] public bool showDownloadFile { get; set; }
-    [Parameter] public bool showAddingFile { get; set; }
-    [Parameter] public EventCallback<int> materialCreated { get; set; }
 
     private MaterialDto material { get; set; }
     private string? errorMessage { get; set; }

@@ -1,12 +1,18 @@
 ﻿@page "/materialItem/{materialId:int?}"
 @using System.Diagnostics
-@using CommunityToolkit.Maui.Alerts
-@using CommunityToolkit.Maui.Storage
+
+@using catch_up_mobile.Components.Pages.File
 @using catch_up_mobile.Dtos
 
+@using CommunityToolkit.Maui.Storage
+@using CommunityToolkit.Maui.Alerts
+@using Plugin.Maui.Audio
+
+@using System.Text.Json
+@inject IFileSaver FileSaver
 @inject HttpClient _httpClient
 
-<section>
+<section class="container">
     @if (material != null)
     {
         <h2>@material.Name</h2>
@@ -34,8 +40,13 @@
         </ul>
         @if (showAddingFile)
         {
-            <span>showAddingFile</span>
+            @*             <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" @onclick="UploadByMic"><i class="bi bi-mic"></i></button>
+                <button type="button" class="btn btn-secondary" @onclick="UploadByCam"><i class="bi bi-camera"></i></button>
+                <button type="button" class="btn btn-secondary" @onclick="UploadFile"><i class="bi bi-card-image"></i>Files</button>
+            </div> *@
         }
+        <Recorder OnSaveCompleted="UploadByMic" />
     }
     else
     {
@@ -63,7 +74,10 @@
         if (materialId == null || materialId == 0)
             material = null;
         else
+        {
             await LoadMaterial();
+        }
+
     }
 
     private async Task LoadMaterial()
@@ -132,27 +146,79 @@
 
                 var fileName = $"{file.Name}";
                 // var saverProgress = new Progress<double>(percentage => ProgressBar.ProgressProperty = percentage);
-                var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream);
+                var fileSaverResult = await FileSaver.SaveAsync(fileName, stream);
                 // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
 
 
                 if (fileSaverResult.IsSuccessful)
-                {
                     await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
-                }
                 else
-                {
                     await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
-                }
             }
             else
-            {
                 await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();
-            }
         }
         catch (Exception ex)
         {
             await Toast.Make($"Error downloading or saving the file: {ex.Message}").Show();
         }
+    }
+
+    private async Task UploadByMic(IAudioSource audioSource)
+    {
+        try
+        {
+            if (audioSource == null)
+            {
+                await Toast.Make("No audio source available to upload.").Show();
+                return;
+            }
+
+            var stream = audioSource.GetAudioStream();
+            stream.Position = 0;
+
+            var content = new MultipartFormDataContent();
+
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/mpeg");
+            content.Add(fileContent, "file", $"Audio_{DateTime.Now:yyyyMMdd_HHmmss}.mp3");
+
+            if (materialId.HasValue)
+                content.Add(new StringContent(materialId.Value.ToString()), "materialId");
+
+            var response = await _httpClient.PostAsync($"api/file/Upload?materialId={materialId.Value}", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                if (responseData != null && responseData.ContainsKey("fileDto") && responseData.ContainsKey("materialId"))
+                {
+                    var fileDtoJson = JsonSerializer.Serialize(responseData["fileDto"]);
+                    var fileDto = JsonSerializer.Deserialize<FileDto>(fileDtoJson);
+
+                    material.Files.Add(fileDto);
+                    await Toast.Make("Audio uploaded successfully!").Show();
+                }
+            }
+            else
+            {
+                await Toast.Make($"Failed to upload audio. Error: {response.StatusCode}").Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error uploading audio: {ex.Message}").Show();
+        }
+    }
+
+
+    private async Task UploadByCam()
+    {
+
+    }
+
+    private async Task UploadFile()
+    {
+
     }
 }

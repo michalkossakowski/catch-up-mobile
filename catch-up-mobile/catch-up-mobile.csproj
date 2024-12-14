@@ -58,16 +58,21 @@
     </ItemGroup>
 
     <ItemGroup>
+      <AndroidResource Remove="Components\Pages\Files\**" />
+      <Compile Remove="Components\Pages\Files\**" />
+      <Content Remove="Components\Pages\Files\**" />
+      <EmbeddedResource Remove="Components\Pages\Files\**" />
+      <MauiXaml Remove="Components\Pages\Files\**" />
+      <None Remove="Components\Pages\Files\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="CommunityToolkit.Maui" Version="9.1.1" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
         <PackageReference Include="Plugin.Maui.Audio" Version="3.0.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Components\Pages\Files\" />
     </ItemGroup>
 
 </Project>

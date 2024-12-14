@@ -1,6 +1,11 @@
 ﻿@page "/recorder"
 @using Plugin.Maui.Audio
+
 @using CommunityToolkit.Maui.Storage
+@using CommunityToolkit.Maui.Alerts
+
+@using catch_up_mobile.Dtos
+
 @inject IAudioManager AudioManager
 @inject IFileSaver FileSaver
 
@@ -20,6 +25,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public EventCallback<IAudioSource> OnSaveCompleted { get; set; }
+
     private IAudioRecorder recorder;
     private IAudioSource audioSource;
     public string statusMessage;
@@ -59,9 +67,11 @@
 
     private async Task SaveRecording()
     {
-        await FileSaver.SaveAsync(
-            $"Audio_{DateTime.Now.ToString("dd-MM-yyyy_HH:mm:ss")}.mp3",
-            audioSource.GetAudioStream()
-        );
+        if (audioSource == null)
+        {
+            await Toast.Make("No recording available to save.").Show();
+            return;
+        }
+        await OnSaveCompleted.InvokeAsync(audioSource);
     }
 }

@@ -1,17 +1,11 @@
-﻿@page "/FileAdd/{materialId:int?}"
+﻿@page "/fileAdd/{materialId:int?}"
 @using System.Diagnostics
 @using catch_up_mobile.Dtos
 
 @inject HttpClient _httpClient
 
-<section>
-    @if (errorMessage != null)
-    {
-        <div class="alert alert-danger" role="alert">
-            @errorMessage
-            <button type="button" class="btn-close" aria-label="Close" @onclick="ClearErrorMessage"></button>
-        </div>
-    }
+<section class="container">
+
 </section>
 @code {
     [Parameter] public int? materialId { get; set; }
@@ -25,36 +19,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (materialId == null || materialId == 0)
-        {
-            material = null;
-            ShowErrorMessage($"Material index is null:");
-        }
-        else
-        {
-            await LoadMaterial();
-        }
-    }
 
-    private async Task LoadMaterial()
-    {
-        try
-        {
-            var x = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
-        }
-        catch (Exception ex)
-        {
-            ShowErrorMessage($"Material fetching error: {ex.Message}");
-        }
-    }
-
-    private void ShowErrorMessage(string message)
-    {
-        errorMessage = message;
-    }
-
-    private void ClearErrorMessage()
-    {
-        errorMessage = null;
     }
 }

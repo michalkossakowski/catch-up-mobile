@@ -2,6 +2,7 @@
 using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
+using catch_up_mobile.SQLite;
 
 namespace catch_up_mobile
 {
@@ -40,6 +41,9 @@ namespace catch_up_mobile
 
             //File Saver
             builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
+
+            //SQL Lite
+            builder.Services.AddSingleton<CatchUpLocalDb>(s => new CatchUpLocalDb(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
             // ----------- Custom Section End -----------
 

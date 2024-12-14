@@ -111,13 +111,13 @@
                 await _localDb.AddFaqAsync(faq);
 
             offlineMode = false;
-            Console.WriteLine("==================== Faqs fetched from API ====================");
+            await Toast.Make("FAQs fetched from API").Show();
         }
         catch (Exception)
         {
             faqs = await _localDb.GetFaqsAsync();
             offlineMode = true;
-            Console.WriteLine("==================== Faqs fetched from SQL Lite ====================");
+            await Toast.Make("FAQs fetched from SQLite").Show();
         }
     }
 

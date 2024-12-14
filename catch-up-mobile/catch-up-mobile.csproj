@@ -25,7 +25,7 @@
         <ApplicationTitle>catch-up-mobile</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.unhandled_exception.catch_up_mobile</ApplicationId>
+        <ApplicationId>com.unhandledexception.catchupmobile</ApplicationId>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

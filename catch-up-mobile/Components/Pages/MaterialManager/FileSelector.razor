@@ -1,0 +1,53 @@
+﻿@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+<hr>
+<div class="d-grid col-6 mx-auto">
+    <button type="button" class="btn btn-outline-primary" @onclick="PickFile">@(fileResult == null ? "Pick a File" : "Chane File")</button>
+</div>
+<hr>
+
+@if (fileResult != null)
+{
+    <div class="d-grid gap-2 mt-3">
+        <p>Selected File: @fileResult.FileName</p>
+        <button class="btn btn-primary" type="button" @onclick="ConfirmSendFile">Send File</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<FileResult> OnSendFile { get; set; }
+
+    private FileResult? fileResult;
+    private async Task PickFile()
+    {
+        await PickFileAsync();
+    }
+
+    public async Task PickFileAsync()
+    {
+        try
+        {
+            fileResult = await FilePicker.PickAsync();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"File picking failed:: {ex.Message}").Show();
+        }
+    }
+
+    private async Task ConfirmSendFile()
+    {
+        if (fileResult == null)
+            return;
+
+        var popup = new ConfirmPopup($"Do you want to send this file?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+                await OnSendFile.InvokeAsync(fileResult);
+            }
+        });
+        App.Current.MainPage.ShowPopup(popup);
+    }
+}

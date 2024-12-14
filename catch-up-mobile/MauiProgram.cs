@@ -12,6 +12,7 @@ namespace catch_up_mobile
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkitCamera()
                 .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {

@@ -2,6 +2,7 @@
 using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
+using catch_up_mobile.SQLite;
 
 namespace catch_up_mobile
 {
@@ -32,7 +33,7 @@ namespace catch_up_mobile
             };
             builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
             {
-                BaseAddress = new Uri("https://localhost:7097/")
+                BaseAddress = new Uri("https://4gn3rpk9-7097.euw.devtunnels.ms/")
             });
 
             //Record Audio
@@ -40,6 +41,9 @@ namespace catch_up_mobile
 
             //File Saver
             builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
+
+            //SQL Lite
+            builder.Services.AddSingleton<CatchUpLocalDb>(s => new CatchUpLocalDb(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
             // ----------- Custom Section End -----------
 

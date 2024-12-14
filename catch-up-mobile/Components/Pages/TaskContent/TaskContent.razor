@@ -1,0 +1,196 @@
+@page "/taskcontent"
+
+@inject HttpClient Http
+@using catch_up_backend.Dtos
+
+<h3>Task Content</h3>
+
+<EditForm Model="@newTaskContent" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <InputText id="title" class="form-control" @bind-Value="newTaskContent.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <InputTextArea id="description" class="form-control" @bind-Value="newTaskContent.Description" />
+    </div>
+
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <InputSelect id="category" class="form-control" @bind-Value="newTaskContent.CategoryId">
+            <option value="">Select a category</option>
+            @foreach (var category in categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label for="material" class="form-label">Material</label>
+        <InputSelect id="material" class="form-control" @bind-Value="newTaskContent.MaterialsId">
+            <option value="">Select a material</option>
+            @foreach (var material in materials)
+            {
+                <option value="@material.Id">@material.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Task Content</button>
+</EditForm>
+
+<h4>Task Content List</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Material</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var task in taskContents)
+        {
+            <tr>
+                <td>@task.Title</td>
+                <td>@task.Description</td>
+                <td>
+                    @(categories.FirstOrDefault(c => c.Id == task.CategoryId)?.Name ?? "No category")
+                </td>
+                <td>
+                    @if (task.MaterialsId.HasValue)
+                    {
+                        <span>Material ID: @task.MaterialsId</span>
+                    }
+                    else
+                    {
+                        <span>No material</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-primary btn-sm me-2" @onclick="() => HandleEdit(task)">
+                        Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick="() => HandleDelete(task.Id)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private TaskContentDto newTaskContent = new TaskContentDto();
+    private List<CategoryDto> categories = new List<CategoryDto>();
+    private List<MaterialDto> materials = new List<MaterialDto>();
+    private List<TaskContentDto> taskContents = new List<TaskContentDto>();
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+        materials = await Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
+        await LoadTaskContents();
+    }
+
+    private async Task LoadTaskContents()
+    {
+        taskContents = await Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!categories.Any(c => c.Id == newTaskContent.CategoryId))
+        {
+            var newCategory = new CategoryDto { Name = "Nowa kategoria" };
+            var response = await Http.PostAsJsonAsync("api/Category/Add", newCategory);
+            if (response.IsSuccessStatusCode)
+            {
+                var createdCategory = await response.Content.ReadFromJsonAsync<CategoryDto>();
+                newTaskContent.CategoryId = createdCategory.Id;
+            }
+        }
+
+        newTaskContent.CreatorId = Guid.Parse("4f3c4e57-ea63-4c44-3390-08dd19ed7954");
+
+        HttpResponseMessage result;
+        if (isEditing)
+        {
+            result = await Http.PutAsJsonAsync($"api/TaskContent/Edit/{newTaskContent.Id}", newTaskContent);
+        }
+        else
+        {
+            result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);
+        }
+
+        if (result.IsSuccessStatusCode)
+        {
+            newTaskContent = new TaskContentDto();
+            isEditing = false;
+            await LoadTaskContents();
+        }
+        else
+        {
+            // Handle error
+        }
+    }
+
+    private async Task HandleEdit(TaskContentDto task)
+    {
+        newTaskContent = task;
+        isEditing = true;
+    }
+
+    private async Task HandleDelete(int taskId)
+    {
+        var response = await Http.DeleteAsync($"api/TaskContent/Delete/{taskId}");
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadTaskContents();
+        }
+    }
+}
+
+<style>
+    .table {
+        width: 100%;
+        margin-bottom: 1rem;
+        color: #212529;
+        border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.75rem;
+        vertical-align: top;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+
+    .me-2 {
+        margin-right: 0.5rem;
+    }
+</style>

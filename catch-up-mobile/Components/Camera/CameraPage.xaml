@@ -3,13 +3,13 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="catch_up_mobile.Components.Camera.CameraPage"
              Title="CameraPage">
-    <VerticalStackLayout Padding="10" BackgroundColor="#22272b">
+    <ScrollView>
+        <VerticalStackLayout Padding="10" BackgroundColor="#22272b">
         <Image 
             x:Name="CapturedImage"
             HeightRequest="200" 
             Aspect="AspectFit"
             HorizontalOptions="Center"
-            VerticalOptions="Center"
             Margin="0,0,0,20"
             Source="../../Resources/Images/camera.svg"
             />
@@ -18,7 +18,6 @@
             MediaCaptured="CameraView_MediaCaptured"
             HeightRequest="470"
             HorizontalOptions="Center"
-            VerticalOptions="Center"
             IsVisible="True"
             IsEnabled="True"
         />
@@ -31,7 +30,6 @@
             Margin="0,20,0,0"
             Text="Capture Photo"
             HorizontalOptions="Center"
-            VerticalOptions="End"
             Clicked="CaptureImage"
         />
         <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" Margin="5,20,5,0">
@@ -43,7 +41,6 @@
                 x:Name="UploadButton"
                 Text="Upload"
                 HorizontalOptions="Center"
-                VerticalOptions="End"
                 Clicked="UploadImage"
             />
             <Button 
@@ -53,9 +50,9 @@
                 Text="Cancel"
                 FontSize="18"
                 HorizontalOptions="Center"
-                VerticalOptions="End"
                 Clicked="GoBack" 
             />
         </HorizontalStackLayout>
-    </VerticalStackLayout> 
+    </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

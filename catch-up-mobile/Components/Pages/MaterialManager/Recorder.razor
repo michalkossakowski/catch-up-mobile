@@ -15,10 +15,10 @@
     <h1>Recorder</h1>
     <h4>@statusMessage</h4>
 
-    <div class="mt-3 mb-3 btn-group " role="group">
-        <button class="btn btn-primary" @onclick="StartRecording" style=" --bs-btn-padding-x: 2.25rem;">Start</button>
-        <button class="btn btn-danger" @onclick="StopRecording" style=" --bs-btn-padding-x: 2.25rem;">Stop</button>
-        <button class="btn btn-info" @onclick="PlayRecording" style=" --bs-btn-padding-x: 2.25rem;">Play</button>
+    <div class="d-flex mt-3 mb-3 btn-group ">
+        <button class="btn btn-primary flex-fill" @onclick="StartRecording" >Start</button>
+        <button class="btn btn-danger flex-fill" @onclick="StopRecording" >Stop</button>
+        <button class="btn btn-info flex-fill" @onclick="PlayRecording" >Play</button>
     </div>
     <div class="d-grid  mx-auto mb-3">
         <button class="btn btn-success" @onclick="SaveRecording">Save</button>
@@ -81,10 +81,10 @@
             }
             else
             {
-                statusMessage = "Welcome in recorder";
                 audioSource = null;
             }
         });
         App.Current.MainPage.ShowPopup(popup);
+        statusMessage = "Welcome in recorder";
     }
 }

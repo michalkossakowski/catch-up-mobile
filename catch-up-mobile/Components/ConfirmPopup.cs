@@ -10,7 +10,7 @@
             Content = new VerticalStackLayout
             {
                 Padding = new Thickness(20),
-                BackgroundColor = Colors.White,
+                BackgroundColor = Color.FromRgba("#22272b"),
                 Spacing = 15,
                 Children =
             {
@@ -20,7 +20,7 @@
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center,
                     FontSize = 18,
-                    TextColor = Colors.Black
+                    TextColor = Colors.White
                 },
                 new HorizontalStackLayout
                 {
@@ -30,19 +30,25 @@
                     {
                         new Button
                         {
-                            Text = "Yes",
+                            WidthRequest = 100,
+                            Text = "No",
+                            BackgroundColor = Color.FromRgba("#dc3545"),
+                            TextColor = Color.FromRgba("ffffff"),
                             Command = new Command(() =>
                             {
-                                onConfirmation(true);
+                                onConfirmation(false);
                                 Close();
                             })
                         },
                         new Button
                         {
-                            Text = "No",
+                            WidthRequest = 100,
+                            Text = "Yes",
+                            BackgroundColor = Color.FromRgba("#198754"),
+                            TextColor = Color.FromRgba("ffffff"),
                             Command = new Command(() =>
                             {
-                                onConfirmation(false);
+                                onConfirmation(true);
                                 Close();
                             })
                         }

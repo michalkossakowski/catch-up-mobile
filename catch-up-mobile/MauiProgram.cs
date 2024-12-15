@@ -32,8 +32,9 @@ namespace catch_up_mobile
             };
             builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
             {
-                BaseAddress = new Uri("https://tmfgdsxq-7097.euw.devtunnels.ms/")
+                BaseAddress = new Uri("https://localhost:7097/")
             });
+
 
             //Record Audio
             builder.Services.AddSingleton(AudioManager.Current);

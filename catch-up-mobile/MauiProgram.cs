@@ -36,7 +36,7 @@ namespace catch_up_mobile
             builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
             {
                 //BaseAddress = new Uri("https://localhost:7097/")
-                BaseAddress = new Uri("https://19mq8vvf-7097.euw.devtunnels.ms/")
+                BaseAddress = new Uri("https://z9wmfdqq-7097.euw.devtunnels.ms/")
             });
 
 

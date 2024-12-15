@@ -2,9 +2,17 @@
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 @using catch_up_mobile.Dtos
+@using CommunityToolkit.Maui.Alerts
+@using System.Threading
 
 <div class="container mt-5">
-    <h2>List of Mentors</h2>
+    <h2>List of Newbies</h2>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Search by name or surname..." @bind="searchTerm" />
+        <span style="cursor: pointer" class="input-group-text" @onclick="OnSearchClick">
+            <i class="bi bi-search"></i>
+        </span>
+    </div>
 
     @if (newbies == null)
     {
@@ -26,7 +34,7 @@
                             Position <i class="bi bi-arrow-down-up"></i>
                         </th>
                         <th style="cursor: pointer" @onclick='() => SortNewbies("AssignCount")'>
-                            Number of Newbies <i class="bi bi-arrow-down-up"></i>
+                            Number of Mentors <i class="bi bi-arrow-down-up"></i>
                         </th>
                     </tr>
                 </thead>
@@ -54,6 +62,9 @@
     private string selectedNewbieSurname;
     private Guid selectedNewbieId;
     private bool sortAcs = true;
+    private string searchTerm = string.Empty;
+    private string searchClickedClass = ""; // Zmienna do klasy ikony lupki
+
     protected override async Task OnInitializedAsync()
     {
         newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllNewbies");
@@ -81,12 +92,41 @@
             sortedNewbies = sortedNewbies.OrderBy(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
         }
         sortOrder = column;
+        ShowSortNotification();
     }
 
-    private void HandleNewbieClick(Guid mentorId, string name, string surname)
+    private void HandleNewbieClick(Guid newbieId, string name, string surname)
     {
         selectedNewbieName = name;
         selectedNewbieSurname = surname;
-        selectedNewbieId = mentorId;
+        selectedNewbieId = newbieId;
+    }
+
+    private async Task ShowSortNotification()
+    {
+        string direction = sortAcs ? "ascending" : "descending";
+        string message = $"Sorted by {sortOrder} in {direction} order";
+        await Toast.Make(message).Show();
+    }
+
+    // Metoda uruchamiana po kliknięciu ikony lupki
+    private void OnSearchClick()
+    {
+        FilterNewbies(); // Po kliknięciu lupki, filtrujemy newbie
+        searchClickedClass = "clicked"; // Zmiana klasy ikony po kliknięciu
+    }
+
+    private void FilterNewbies()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            sortedNewbies = newbies; // Jeśli nie ma tekstu, wyświetl wszystkich newbie
+        }
+        else
+        {
+            sortedNewbies = newbies.Where(n =>
+                n.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                n.Surname.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
     }
 }

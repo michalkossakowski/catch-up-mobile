@@ -1,5 +1,126 @@
-﻿<h3>SchoolingList</h3>
+﻿@using CommunityToolkit.Maui.Alerts
+
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+
+@inject HttpClient _httpClient
+@inject CatchUpLocalDb _localDb
+@inject NavigationManager NavigationManager
+
+@page "/schoolingList"
+
+<div class="container text-center">
+    <h2>List of Schoolings</h2>
+
+    @if (fullSchoolings == null)
+    {
+        <Loading />
+    }
+    else
+    {
+         if (offlineMode)
+        {
+            <div class="alert alert-primary" role="alert">
+                You are working in offline mode
+            </div>
+        }
+
+        <div class="accordion text-start mt-3 mb-3" id="accordionExample">
+            @if (fullSchoolings.Count() == 0)
+            {
+                <div class="alert alert-warning" role="alert">
+                    No schoolings found
+                </div>
+            }
+            @for (int i = 0; i < fullSchoolings.Count; i++)
+            {
+                var schooling = fullSchoolings[i].Schooling;
+                var category = fullSchoolings[i].Category;
+                var schoolingPart = fullSchoolings[i].Parts;
+
+                var collapseId = $"collapse{i}";
+                var headingId = $"heading{i}";
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="@headingId">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                            <strong>@(i + 1). @schooling.Title</strong>
+                        </button>
+                    </h2>
+                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <p>@schooling.Description</p>
+                            @if (isAdmin && !offlineMode)
+                            { 
+                                <div>
+                                    <button type="button" class="btn btn-primary" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => schoolingIdToDelete = schooling.Id">
+                                        Delete
+                                    </button>
+                                </div>
+                            } 
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+         if (isAdmin && !offlineMode)
+        {
+            <div class="m-3">
+                <button type="button" class="btn btn-primary" @onclick="OpenSchoolingAdd">Add new FAQ</button>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                You cannot add/edit/delete Schoolings in offline mode
+            </div>
+        }
+    }
+</div>
 
 @code {
+    private List<FullSchoolingDto> fullSchoolings;
+    private int schoolingIdToDelete;
 
+    private bool offlineMode = true;
+    private bool isAdmin = true; // Waiting for ADMIN
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchoolings();
+    }
+
+    private async Task LoadSchoolings()
+    {
+        try
+        {
+            fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
+            offlineMode = false;
+        }
+        catch (Exception ex)
+        {
+            offlineMode = true;
+            await Toast.Make($"Schooling fetching error: {ex.Message}").Show();
+        }
+    }
+    private void OpenSchoolingAdd()
+    {
+        NavigationManager.NavigateTo("/schooling/add");
+    }
+
+    private void OpenSchoolingEdit(int schoolingId)
+    {
+        NavigationManager.NavigateTo($"/schooling/edit/{schoolingId}");
+    }
+    private async Task ConfirmDeleteSchooling()
+    {
+        if (schoolingIdToDelete != null)
+        {
+            // await _httpClient.DeleteAsync($"api/faq/delete/{faqToDelete.Id}");
+            // await _localDb.DeleteFaqAsync(faqToDelete);
+            // faqs.Remove(faqToDelete);
+            // faqToDelete = null;
+            // await Toast.Make("FAQ successfully deleted").Show();
+        }
+    }
 }

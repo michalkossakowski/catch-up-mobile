@@ -1,0 +1,28 @@
+﻿@page "/assignment"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+@using catch_up_mobile.Dtos
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations.Schema
+
+<h3>Assignment</h3>
+<div>
+    <button class="btn btn-primary" @onclick="NavigateToAssignNewbieToMentor">
+        Assign Newbie To Mentor
+    </button>
+    <button class="btn btn-secondary" @onclick="NavigateToAssignMentorToNewbie">
+        Assign Mentor To Newbie
+    </button>
+</div>
+@code {
+    private void NavigateToAssignNewbieToMentor()
+    {
+        NavigationManager.NavigateTo("/assign-newbie-to-mentor");
+    }
+    private void NavigateToAssignMentorToNewbie()
+    {
+        NavigationManager.NavigateTo("/assign-mentor-to-newbie");
+    }
+}

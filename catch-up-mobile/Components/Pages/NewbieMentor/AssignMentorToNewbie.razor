@@ -1,0 +1,92 @@
+﻿@page "/assign-mentor-to-newbie"
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Dtos
+
+<div class="container mt-5">
+    <h2>List of Mentors</h2>
+
+    @if (newbies == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <div>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Name")'>
+                            Name <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Surname")'>
+                            Surname <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Position")'>
+                            Position <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("AssignCount")'>
+                            Number of Newbies <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (UserDto newbie in sortedNewbies)
+                    {
+                        <tr @onclick="() => HandleNewbieClick(newbie.Id, newbie.Name, newbie.Surname)">
+                            <td>@newbie.Name</td>
+                            <td>@newbie.Surname</td>
+                            <td>@newbie.Position</td>
+                            <td>@newbie.AssignCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<UserDto> newbies;
+    private List<UserDto> sortedNewbies;
+    private string sortOrder = "Name";
+    private string selectedNewbieName;
+    private string selectedNewbieSurname;
+    private Guid selectedNewbieId;
+    private bool sortAcs = true;
+    protected override async Task OnInitializedAsync()
+    {
+        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllNewbies");
+        foreach (UserDto newbie in newbies)
+        {
+            newbie.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetMentorCountByNewbie/{newbie.Id}");
+        }
+        sortedNewbies = newbies;
+    }
+
+    private void SortNewbies(string column)
+    {
+        if (sortOrder == column && sortAcs)
+        {
+            sortedNewbies = sortedNewbies.OrderByDescending(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+            sortAcs = false;
+        }
+        else if (sortOrder == column && !sortAcs)
+        {
+            sortedNewbies = sortedNewbies.OrderBy(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+            sortAcs = true;
+        }
+        else
+        {
+            sortedNewbies = sortedNewbies.OrderBy(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+        }
+        sortOrder = column;
+    }
+
+    private void HandleNewbieClick(Guid mentorId, string name, string surname)
+    {
+        selectedNewbieName = name;
+        selectedNewbieSurname = surname;
+        selectedNewbieId = mentorId;
+    }
+}

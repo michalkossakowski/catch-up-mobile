@@ -1,25 +1,34 @@
 ﻿@page "/recorder"
 @using Plugin.Maui.Audio
+
 @using CommunityToolkit.Maui.Storage
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
+@using catch_up_mobile.Dtos
+
 @inject IAudioManager AudioManager
-@inject IFileSaver FileSaver
 
 
 <div class="container text-center">
 
     <h1>Recorder</h1>
-
-    <div class="m-5">
-    <button class="btn btn-primary" @onclick="StartRecording">Start</button>
-    <button class="btn btn-danger" @onclick="StopRecording">Stop</button>
-    <button class="btn btn-info" @onclick="PlayRecording">Play</button>
-    <button class="btn btn-success" @onclick="SaveRecording">Save</button>
-    </div>
-
     <h4>@statusMessage</h4>
+
+    <div class="d-flex mt-3 mb-3 btn-group ">
+        <button class="btn btn-primary flex-fill" @onclick="StartRecording" >Start</button>
+        <button class="btn btn-danger flex-fill" @onclick="StopRecording" >Stop</button>
+        <button class="btn btn-info flex-fill" @onclick="PlayRecording" >Play</button>
+    </div>
+    <div class="d-grid  mx-auto mb-3">
+        <button class="btn btn-success" @onclick="SaveRecording">Save</button>
+    </div>
 </div>
 
 @code {
+    [Parameter]
+    public EventCallback<IAudioSource> OnSendFile { get; set; }
+
     private IAudioRecorder recorder;
     private IAudioSource audioSource;
     public string statusMessage;
@@ -59,9 +68,23 @@
 
     private async Task SaveRecording()
     {
-        await FileSaver.SaveAsync(
-            $"Audio_{DateTime.Now.ToString("dd-MM-yyyy_HH:mm:ss")}.mp3",
-            audioSource.GetAudioStream()
-        );
+        if (audioSource == null)
+        {
+            await Toast.Make("No recording available to save.").Show();
+            return;
+        }
+        var popup = new ConfirmPopup($"Do you want to send this file?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+                await OnSendFile.InvokeAsync(audioSource);
+            }
+            else
+            {
+                audioSource = null;
+            }
+        });
+        App.Current.MainPage.ShowPopup(popup);
+        statusMessage = "Welcome in recorder";
     }
 }

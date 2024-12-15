@@ -1,0 +1,58 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="catch_up_mobile.Components.Camera.CameraPage"
+             Title="CameraPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="10" BackgroundColor="#22272b">
+            <Image 
+                x:Name="CapturedImage"
+                HeightRequest="200" 
+                Aspect="AspectFit"
+                HorizontalOptions="Center"
+                Margin="0,0,0,20"
+                Source="../../Resources/Images/camera.svg"
+                />
+            <toolkit:CameraView 
+                x:Name="CameraView"
+                MediaCaptured="CameraView_MediaCaptured"
+                HeightRequest="470"
+                HorizontalOptions="Center"
+                IsVisible="True"
+                IsEnabled="True"
+            />
+        
+            <Button 
+                BackgroundColor="#0d6efd"
+                TextColor="White"
+                FontSize="18"
+                WidthRequest="200"
+                Margin="0,20,0,0"
+                Text="Capture Photo"
+                HorizontalOptions="Center"
+                Clicked="CaptureImage"
+            />
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" Margin="5,20,5,0">
+                <Button 
+                    BackgroundColor="#198754"
+                    TextColor="White"
+                    WidthRequest="140"
+                    FontSize="18"
+                    x:Name="UploadButton"
+                    Text="Upload"
+                    HorizontalOptions="Center"
+                    Clicked="UploadImage"
+                />
+                <Button 
+                    BackgroundColor="#dc3545"
+                    TextColor="White"
+                    WidthRequest="140"
+                    Text="Cancel"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Clicked="GoBack" 
+                />
+            </HorizontalStackLayout>
+        </VerticalStackLayout> 
+    </ScrollView>
+</ContentPage>

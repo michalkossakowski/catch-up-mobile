@@ -111,13 +111,11 @@
                 await _localDb.AddFaqAsync(faq);
 
             offlineMode = false;
-            await Toast.Make("FAQs fetched from API").Show();
         }
         catch (Exception)
         {
             faqs = await _localDb.GetFaqsAsync();
             offlineMode = true;
-            await Toast.Make("FAQs fetched from SQLite").Show();
         }
     }
 

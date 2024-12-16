@@ -1,0 +1,42 @@
+﻿@page "/newbie-details/{newbieId:guid}"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Dtos
+
+<div class="container mt-5">
+    <h2 class="text-center">Selected Newbie: @SelectedNewbieName @SelectedNewbieSurname</h2>
+    <h3 class="text-center">Position: @SelectedNewbiePosition</h3>
+
+    <div class="row justify-content-center mt-4">
+        <button class="btn btn-primary mx-2" @onclick="GoToNewbies">Go to @SelectedNewbieName @SelectedNewbieSurname Mentors</button>
+        <button class="btn btn-secondary mx-2" @onclick="AssignNewbie">Assign Mentor to @SelectedNewbieName @SelectedNewbieSurname</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid NewbieId { get; set; }
+    private string SelectedNewbieName { get; set; }
+    private string SelectedNewbieSurname { get; set; }
+    private string SelectedNewbiePosition { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        SelectedNewbieName = query["name"];
+        SelectedNewbieSurname = query["surname"];
+        SelectedNewbiePosition = query["position"];
+    }
+
+    private void GoToNewbies()
+    {
+        NavigationManager.NavigateTo($"/mentors/{NewbieId}?name={SelectedNewbieName}&surname={SelectedNewbieSurname}&position={SelectedNewbiePosition}");
+    }
+
+    private void AssignNewbie()
+    {
+        NavigationManager.NavigateTo($"/assign-mentors/{NewbieId}?name={SelectedNewbieName}&surname={SelectedNewbieSurname}&position={SelectedNewbiePosition}");
+    }
+}

@@ -7,6 +7,8 @@
 
 @using CommunityToolkit.Maui.Storage
 @using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
 @using Plugin.Maui.Audio
 
 @using System.Text.Json
@@ -143,8 +145,18 @@
         {
             if (material != null)
             {
-                await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
-                material.Files = material.Files.Where(f => f.Id != fileId).ToList();
+                 var popup = new ConfirmPopup($"Do you want to delete this file?", async (isConfirmed) =>
+                 {
+                     if (isConfirmed)
+                     {
+                         await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
+                         material.Files = material.Files.Where(f => f.Id != fileId).ToList();
+                         await Toast.Make("Schooling successfully deleted").Show();
+
+                         StateHasChanged();
+                     }
+                 });
+                App.Current.MainPage.ShowPopup(popup);
             }
         }
         catch (Exception ex)
@@ -152,7 +164,6 @@
             await Toast.Make($"Error removing file {ex.Message}").Show();
         }
     }
-
     private async Task DownloadFile(int fileId)
     {
         try

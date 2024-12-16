@@ -1,5 +1,8 @@
 ﻿@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
 
+@using System.Collections.ObjectModel
+@using System.ComponentModel
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
 
@@ -20,6 +23,17 @@
     }
     else
     {
+        <div>
+            <input class="form-control" placeholder="Search by title" @oninput="OnSearchQueryChanged">
+            <h4 class="mt-3">Filtr by Category</h4>
+            <select class="form-select" @onchange="OnCategoryChanged">
+                <option value="">Select Category</option>
+                @foreach (var category in availableCategories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </select>
+        </div>
         if (offlineMode)
         {
             <div class="alert alert-primary" role="alert">
@@ -28,16 +42,16 @@
         }
 
         <div class="accordion text-start mt-3 mb-3" id="accordionSchoolingList">
-            @if (fullSchoolings.Count() == 0)
+            @if (filteredSchoolings.Count() == 0)
             {
                 <div class="alert alert-warning" role="alert">
                     No schoolings found
                 </div>
             }
-            @for (int i = 0; i < fullSchoolings.Count; i++)
+            @for (int i = 0; i < filteredSchoolings.Count; i++)
             {
-                var schooling = fullSchoolings[i].Schooling;
-                var category = fullSchoolings[i].Category;
+                var schooling = filteredSchoolings[i].Schooling;
+                var category = filteredSchoolings[i].Category;
 
                 var collapseId = $"collapse{i}";
                 var headingId = $"heading{i}";
@@ -58,7 +72,7 @@
                                 @if (isAdmin && !offlineMode)
                                 {
                                     <button type="button" class="btn btn-warning" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
-                                    <button type="button" class="btn btn-danger" @onclick="() => schoolingIdToDelete = schooling.Id">Delete</button>
+                                    <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
                                 }
                             </div>
                         </div>
@@ -80,18 +94,22 @@
         }
     }
     <SchoolingDetailsModal fullSchooling="@selectedSchooling" />
- </div>
+</div>
 
 @code {
     private List<FullSchoolingDto> fullSchoolings;
-    private int schoolingIdToDelete;
     private FullSchoolingDto selectedSchooling;
+    private List<FullSchoolingDto> filteredSchoolings;
+    private List<CategoryDto> availableCategories = new List<CategoryDto>();
 
+    private string searchQuery = string.Empty;
+    private int? selectedCategoryId = null;
     private bool offlineMode = true;
     private bool isAdmin = true; // Waiting for ADMIN
     protected override async Task OnInitializedAsync()
     {
         await LoadSchoolings();
+        await LoadCategories();
     }
 
     private async Task LoadSchoolings()
@@ -99,12 +117,46 @@
         try
         {
             fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
+            FilterSchoolings();
             offlineMode = false;
         }
         catch (Exception ex)
         {
             offlineMode = true;
             await Toast.Make($"Schooling fetching error: {ex.Message}").Show();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            availableCategories = await _httpClient.GetFromJsonAsync<List<CategoryDto>>($"api/category/GetAll");
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Category fetching error: {ex.Message}").Show();
+        }
+    }
+
+    private void FilterSchoolings()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredSchoolings = fullSchoolings.ToList();
+        }
+        else
+        {
+            filteredSchoolings = fullSchoolings
+                .Where(s => s.Schooling.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (selectedCategoryId.HasValue)
+        {
+            filteredSchoolings = filteredSchoolings
+                .Where(s => s.Category.Id == selectedCategoryId.Value)
+                .ToList();
         }
     }
     private void OpenSchoolingAdd()
@@ -118,17 +170,39 @@
     }
     private void SeeDetails(int schoolingId)
     {
-        selectedSchooling = fullSchoolings.Find(s => s.Schooling.Id == schoolingId);
+        selectedSchooling = fullSchoolings.FirstOrDefault(s => s.Schooling.Id == schoolingId);
     }
-    private async Task ConfirmDeleteSchooling()
+    private async Task DeleteSchooling(int schoolingId)
     {
-        if (schoolingIdToDelete != null)
+        var popup = new ConfirmPopup($"Do you want to delete this schooling?", async (isConfirmed) =>
         {
-            // await _httpClient.DeleteAsync($"api/faq/delete/{faqToDelete.Id}");
-            // await _localDb.DeleteFaqAsync(faqToDelete);
-            // faqs.Remove(faqToDelete);
-            // faqToDelete = null;
-            // await Toast.Make("FAQ successfully deleted").Show();
-        }
+            if (isConfirmed)
+            {
+                await _httpClient.DeleteAsync($"api/schooling/DeleteSchooling/{schoolingId}");
+
+                var itemToRemove = fullSchoolings.FirstOrDefault(fs => fs.Schooling.Id == schoolingId);
+                if (itemToRemove != null)
+                {
+                    fullSchoolings.Remove(itemToRemove);
+                    await Toast.Make("Schooling successfully deleted").Show();
+
+                    StateHasChanged();
+                }
+            }
+        });
+        App.Current.MainPage.ShowPopup(popup);
+    }
+    private void OnSearchQueryChanged(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        FilterSchoolings();
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value?.ToString();
+        selectedCategoryId = string.IsNullOrEmpty(selectedValue) ? null : int.Parse(selectedValue);
+
+        FilterSchoolings();
     }
 }

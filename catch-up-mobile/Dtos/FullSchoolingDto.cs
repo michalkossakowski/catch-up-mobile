@@ -2,9 +2,9 @@
 {
     public class FullSchoolingDto
     {
-        public SchoolingDto Schooling {get; set;}
-        public CategoryDto Category { get; set; }
-        public List<SchoolingPartDto> Parts { get; set; }
+        public SchoolingDto? Schooling {get; set;}
+        public CategoryDto? Category { get; set; }
+        public List<SchoolingPartDto>? Parts { get; set; }
 
         public FullSchoolingDto(SchoolingDto schooling, CategoryDto category, List<SchoolingPartDto> parts)
         {

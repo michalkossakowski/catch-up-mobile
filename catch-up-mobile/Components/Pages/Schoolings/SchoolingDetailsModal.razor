@@ -1,0 +1,107 @@
+﻿@using catch_up_mobile.Dtos
+
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Storage
+
+@inject HttpClient _httpClient
+
+@{
+    var schooling = fullSchooling?.Schooling;
+    var category = fullSchooling?.Category;
+    var schoolingParts = fullSchooling?.Parts;
+}
+<div class="modal fade" id="schoolingDetailsModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="schoolingDetailsLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="schoolingDetailsLabel">@schooling?.Title</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <strong class="fs-3">Category: @category?.Name</strong>
+                <p>@schooling?.Description</p>
+                @if (schoolingParts != null){
+                    <hr class="border border-2 bg-secondary"/>
+                    foreach (var part in schoolingParts)
+                    {
+                        <div class="card bg-light-subtle mb-3">
+                            <div class="card-header">
+                                <stron class="fs-3">@part.Name</stron>
+                            </div>
+                            <div class="card-body">
+                                @part.Content
+                                @if (part.Materials != null)
+                                {
+                                    <ol class="list-group list-group-numbered mt-3">
+                                        @foreach (var material in part.Materials)
+                                        {
+                                            <li class="list-group-item fs-5">
+                                                <strong>@material.Name</strong>
+                                                @if (material.Files != null)
+                                                {    
+                                                    <ul class="list-group mt-2 fs-6">
+                                                        @foreach (var file in material.Files)
+                                                        {
+                                                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                                                @file.Name
+                                                                <div>
+                                                                    <a @onclick="() => DownloadFile(file.Id)">
+                                                                        <i class="bi bi-file-earmark-arrow-down downloadIcon"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                }
+                                            </li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public FullSchoolingDto? fullSchooling { get; set; }
+
+    private async Task DownloadFile(int fileId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/file/Download/{fileId}", HttpCompletionOption.ResponseHeadersRead);
+            var file = fullSchooling?.Parts
+                .SelectMany(part => part.Materials)
+                .SelectMany(material => material.Files)
+                .FirstOrDefault(f => f.Id == fileId);
+
+            if (response.IsSuccessStatusCode && file != null)
+            {
+                await using var stream = await response.Content.ReadAsStreamAsync();
+
+                var fileName = $"{file.Name}";
+                // var saverProgress = new Progress<double>(percentage => ProgressBar.ProgressProperty = percentage);
+                var fileSaverResult = await FileSaver.SaveAsync(fileName, stream);
+                // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
+
+                if (fileSaverResult.IsSuccessful)
+                    await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
+                else
+                    await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
+            }
+            else
+                await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error downloading or saving the file: {ex.Message}").Show();
+        }
+    }
+}

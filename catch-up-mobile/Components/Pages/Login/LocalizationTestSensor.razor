@@ -6,74 +6,10 @@
 @using CommunityToolkit.Maui.Alerts
 
 <div class="d-flex justify-content-center">
-    <button class="btn btn-primary" @onclick="GetLocation">Check your city</button>
+    <button class="btn btn-primary" @onclick="ComapnyLocator.GetLocation">Check your city</button>
 </div>
-<p class="text-center">@locationMessage</p>
+<p class="text-center">@ComapnyLocator.locationMessage</p>
 
 @code {
-    private string locationMessage = "";
 
-    private readonly Dictionary<string, (double Latitude, double Longitude, double RadiusKm)> citiesCoordinates = CompanyCities.GetCities();
-
-    private async Task GetLocation()
-    {
-        Location location = await Geolocation.GetLastKnownLocationAsync();
-        if (location == null)
-        {
-            locationMessage = "Unable to retrieve location";
-            return;
-        }
-        double latitude = location.Latitude;
-        double longitude = location.Longitude;
-        Toast.Make($"latitude: {latitude} longitude: {longitude}").Show();
-        string city = GetCityIfInside(latitude, longitude);
-        if (!string.IsNullOrEmpty(city))
-        {
-            locationMessage = $"You are in {city}";
-        }
-        else
-        {
-            locationMessage = "You are out of company cities";
-        }
-    }
-
-    private string GetCityIfInside(double latitude, double longitude)
-    {
-        foreach (var city in citiesCoordinates)
-        {
-            string cityName = city.Key;
-            double cityLatitude = city.Value.Latitude;
-            double cityLongitude = city.Value.Longitude;
-            double cityRadius = city.Value.RadiusKm;
-
-            double distance = CalculateDistance(latitude, longitude, cityLatitude, cityLongitude);
-
-            if (distance <= cityRadius)
-            {
-                return cityName;
-            }
-        }
-        return "";
-    }
-
-    //formuła Haversine'a https://en.wikipedia.org/wiki/Haversine_formula jakby ktoś chciał zrozumieć
-    private double CalculateDistance(double ourLatitude, double ourLongitude, double cityLatitude, double cityLongitude)
-    {
-        const double EarthRadiusKm = 6371.0;
-
-        double LatitudeDistance = DegreesToRadians(cityLatitude - ourLatitude);
-        double LongitudeDistance = DegreesToRadians(cityLongitude - ourLongitude);
-
-        double a = Math.Sin(LatitudeDistance / 2) * Math.Sin(LatitudeDistance / 2) +
-                   Math.Cos(DegreesToRadians(ourLatitude)) * Math.Cos(DegreesToRadians(cityLatitude)) *
-                   Math.Sin(LongitudeDistance / 2) * Math.Sin(LongitudeDistance / 2);
-
-        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a)); //kąt który powstaje między 2 punktami na kuli
-
-        return EarthRadiusKm * c;
-    }
-    private double DegreesToRadians(double degrees)
-    {
-        return degrees * Math.PI / 180;
-    }
 }

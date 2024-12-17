@@ -1,0 +1,340 @@
+﻿@page "/materialItem/{materialId:int?}"
+@using System.Diagnostics
+
+@using catch_up_mobile.Components.Pages.MaterialManager
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.Components.Camera
+
+@using CommunityToolkit.Maui.Storage
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
+@using Plugin.Maui.Audio
+
+@using System.Text.Json
+@inject IFileSaver FileSaver
+@inject HttpClient _httpClient
+
+<section class="container">
+    @if (material != null)
+    {
+        <h2>@material.Name</h2>
+        <ul class="list-group">
+            @foreach (var file in material.Files)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    @file.Name
+                    <div>
+                        @if (showRemoveFile)
+                        {
+                            <a class="pe-2" @onclick="() => RemoveFile(file.Id)">
+                                <i class="bi bi-trash3 deleteIcon"></i>
+                            </a>
+                        }
+                        @if (showDownloadFile)
+                        {
+                            <a @onclick="() => DownloadFile(file.Id)">
+                                <i class="bi bi-file-earmark-arrow-down downloadIcon"></i>
+                            </a>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+        @if (showAddingFile)
+        {
+            <div class="d-flex justify-content-between mt-3 mb-3 btn-group">
+                <button type="button" class="btn btn-outline-secondary flex-grow-1 @(ActiveComponent == "MicRecorder" ? "active" : "")"
+                @onclick='() => SetActiveComponent("MicRecorder")'>
+                    <i class="bi bi-mic"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary flex-grow-1 @(ActiveComponent == "CamManager" ? "active" : "")"
+                @onclick='OpenCameraPage'>
+                    <i class="bi bi-camera"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary flex-grow-1 @(ActiveComponent == "FileSelector" ? "active" : "")"
+                @onclick='() => SetActiveComponent("FileSelector")'>
+                    <i class="bi bi-card-image"></i> Files
+                </button>
+            </div>
+        }
+
+        @if (ActiveComponent == "MicRecorder")
+        {
+            <Recorder OnSendFile="UploadByMic" />
+        }
+        else if (ActiveComponent == "FileSelector")
+        {
+            <FileSelector OnSendFile="UploadByFileSelector" />
+        }
+    }
+    else
+    {
+        <div class="input-group mb-3">
+            <input type="text" placeholder="Material's name" class="form-control" @bind="materialName" />
+            <button class="btn btn-outline-secondary" type="button" @onclick="CreateMaterial">
+                Create
+            </button>
+        </div>
+    }
+</section>
+@code {
+    [Parameter] public int? materialId { get; set; }
+    [Parameter] public bool showRemoveFile { get; set; } = false;
+    [Parameter] public bool showDownloadFile { get; set; } = false;
+    [Parameter] public bool showAddingFile { get; set; } = false;
+    [Parameter] public EventCallback<int> materialCreated { get; set; }
+
+    private MaterialDto material { get; set; }
+    private string? materialName { get; set; }
+    private string ActiveComponent { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (materialId == null || materialId == 0)
+            material = null;
+        else
+        {
+            await LoadMaterial();
+        }
+
+    }
+
+    private async Task LoadMaterial()
+    {
+        try
+        {
+            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Material fetching error: {ex.Message}").Show();
+        }
+    }
+
+    private async Task CreateMaterial()
+    {
+        if (!string.IsNullOrEmpty(materialName))
+        {
+            try
+            {
+                var newMaterial = new MaterialDto { Name = materialName };
+                var response = await _httpClient.PostAsJsonAsync($"api/material/Create", newMaterial);
+                var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
+                if (responseContent != null)
+                {
+                    materialId = responseContent.Id;
+                    materialName = responseContent.Name;
+                    material = responseContent;
+
+                    if (materialId.HasValue)
+                        await materialCreated.InvokeAsync(materialId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in creating material {ex.Message}").Show();
+            }
+        }
+    }
+
+    private async Task RemoveFile(int fileId)
+    {
+        try
+        {
+            if (material != null)
+            {
+                 var popup = new ConfirmPopup($"Do you want to delete this file?", async (isConfirmed) =>
+                 {
+                     if (isConfirmed)
+                     {
+                         await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
+                         material.Files = material.Files.Where(f => f.Id != fileId).ToList();
+                         await Toast.Make("Schooling successfully deleted").Show();
+
+                         StateHasChanged();
+                     }
+                 });
+                App.Current.MainPage.ShowPopup(popup);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error removing file {ex.Message}").Show();
+        }
+    }
+    private async Task DownloadFile(int fileId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/file/Download/{fileId}", HttpCompletionOption.ResponseHeadersRead);
+            var file = material?.Files.FirstOrDefault(f => f.Id == fileId);
+
+            if (response.IsSuccessStatusCode && file != null)
+            {
+                await using var stream = await response.Content.ReadAsStreamAsync();
+
+                var fileName = $"{file.Name}";
+                // var saverProgress = new Progress<double>(percentage => ProgressBar.ProgressProperty = percentage);
+                var fileSaverResult = await FileSaver.SaveAsync(fileName, stream);
+                // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
+
+                if (fileSaverResult.IsSuccessful)
+                    await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
+                else
+                    await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
+            }
+            else
+                await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error downloading or saving the file: {ex.Message}").Show();
+        }
+    }
+    private void SetActiveComponent(string? component)
+    {
+        if (component == null )
+        {
+            ActiveComponent = null;
+        }
+        else
+        {
+            ActiveComponent = component;
+        }
+    }
+
+    private async Task OpenCameraPage()
+    {
+        SetActiveComponent("CamManager");
+        var cameraPage = new CameraPage
+        {
+                OnSendFile = EventCallback.Factory.Create<Stream>(this, UploadByCam)
+        };
+        await App.Current.MainPage.Navigation.PushModalAsync(cameraPage);
+    }
+
+    private async Task UploadByFileSelector(FileResult fileResult)
+    {
+
+        try
+        {
+            var stream = await fileResult.OpenReadAsync();
+
+            var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(fileResult.ContentType);
+            content.Add(fileContent, "file", fileResult.FileName);
+
+            if (materialId.HasValue)
+                content.Add(new StringContent(materialId.Value.ToString()), "materialId");
+
+            var response = await _httpClient.PostAsync($"api/file/Upload?materialId={materialId.Value}", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                if (responseData != null && responseData.ContainsKey("fileDto") && responseData.ContainsKey("materialId"))
+                {
+                    var fileDtoJson = JsonSerializer.Serialize(responseData["fileDto"]);
+                    var fileDto = JsonSerializer.Deserialize<FileDto>(fileDtoJson);
+
+                    material.Files.Add(fileDto);
+                    await Toast.Make("File uploaded successfully!").Show();
+                }
+            }
+            else
+                await Toast.Make($"Failed to upload file. Error: {response.StatusCode}").Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error uploading file: {ex.Message}").Show();
+        }
+    }
+    private async Task UploadByMic(IAudioSource? audioSource)
+    {
+        try
+        {
+            if (audioSource == null)
+            {
+                await Toast.Make("No audio source available to upload.").Show();
+                return;
+            }
+
+            var stream = audioSource.GetAudioStream();
+            stream.Position = 0;
+
+            var content = new MultipartFormDataContent();
+
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/mpeg");
+            content.Add(fileContent, "file", $"Audio_{DateTime.Now:yyyyMMdd_HHmmss}.mp3");
+
+            if (materialId.HasValue)
+                content.Add(new StringContent(materialId.Value.ToString()), "materialId");
+
+            var response = await _httpClient.PostAsync($"api/file/Upload?materialId={materialId.Value}", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                if (responseData != null && responseData.ContainsKey("fileDto") && responseData.ContainsKey("materialId"))
+                {
+                    var fileDtoJson = JsonSerializer.Serialize(responseData["fileDto"]);
+                    var fileDto = JsonSerializer.Deserialize<FileDto>(fileDtoJson);
+
+                    material.Files.Add(fileDto);
+                    await Toast.Make("Audio uploaded successfully!").Show();
+                }
+            }
+            else
+                await Toast.Make($"Failed to upload audio. Error: {response.StatusCode}").Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error uploading audio: {ex.Message}").Show();
+        }
+    }
+
+    private async Task UploadByCam(Stream stream)
+    {
+        try
+        {
+            SetActiveComponent(null);
+            if (stream == null)
+                return;
+
+            var content = new MultipartFormDataContent();
+
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            content.Add(fileContent, "file", $"Image_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+
+            if (materialId.HasValue)
+                content.Add(new StringContent(materialId.Value.ToString()), "materialId");
+
+            var response = await _httpClient.PostAsync($"api/file/Upload?materialId={materialId.Value}", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                if (responseData != null && responseData.ContainsKey("fileDto") && responseData.ContainsKey("materialId"))
+                {
+                    var fileDtoJson = JsonSerializer.Serialize(responseData["fileDto"]);
+                    var fileDto = JsonSerializer.Deserialize<FileDto>(fileDtoJson);
+
+                    material.Files.Add(fileDto);
+                    await Toast.Make("File uploaded successfully!").Show();
+                }
+            }
+            else
+                await Toast.Make($"Failed to upload file. Error: {response.StatusCode}").Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error uploading file: {ex.Message}").Show();
+        }
+
+    }
+}

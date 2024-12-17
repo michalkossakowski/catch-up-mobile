@@ -25,7 +25,7 @@
         <ApplicationTitle>catch-up-mobile</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.catchupmobile</ApplicationId>
+        <ApplicationId>com.unhandledexception.catchupmobile</ApplicationId>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -37,7 +37,11 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-    </PropertyGroup>
+		
+		<!-- Fix for WinRTGlobalVtableLookup.g.cs-->
+		<CsWinRTAotOptimizerEnabled Condition="'$(CsWinRTAotOptimizerEnabled)' != 'true'">false</CsWinRTAotOptimizerEnabled>
+
+	</PropertyGroup>
 
     <ItemGroup>
         <!-- App Icon -->
@@ -49,8 +53,8 @@
         <!-- Images -->
         <MauiImage Include="Resources\Images\*" />
         <MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
-
-        <!-- Custom Fonts -->
+		
+		<!-- Custom Fonts -->
         <MauiFont Include="Resources\Fonts\*" />
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
@@ -58,10 +62,40 @@
     </ItemGroup>
 
     <ItemGroup>
+      <AndroidResource Remove="Components\Pages\Files\**" />
+      <Compile Remove="Components\Pages\Files\**" />
+      <Content Remove="Components\Pages\Files\**" />
+      <EmbeddedResource Remove="Components\Pages\Files\**" />
+      <MauiXaml Remove="Components\Pages\Files\**" />
+      <None Remove="Components\Pages\Files\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Maui" Version="9.1.1" />
+        <PackageReference Include="CommunityToolkit.Maui.Camera" Version="1.0.4" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="Plugin.Maui.Audio" Version="3.0.1" />
+        <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+		<PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.83" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Components\Camera\CameraPage.xaml.cs">
+        <DependentUpon>CameraPage.xaml</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <MauiXaml Update="Components\Camera\CameraPage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Components\Pages\File\" />
     </ItemGroup>
 
 </Project>

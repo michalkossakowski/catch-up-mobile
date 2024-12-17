@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Storage;
+using Microsoft.Extensions.Logging;
+using Plugin.Maui.Audio;
+using catch_up_mobile.SQLite;
 
 namespace catch_up_mobile
 {
@@ -9,9 +13,12 @@ namespace catch_up_mobile
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkitCamera()
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
             builder.Services.AddMauiBlazorWebView();
@@ -30,6 +37,16 @@ namespace catch_up_mobile
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });
+
+            //Record Audio
+            builder.Services.AddSingleton(AudioManager.Current);
+
+            //File Saver
+            builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
+
+            //SQL Lite
+            builder.Services.AddSingleton<CatchUpLocalDb>(s => new CatchUpLocalDb(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
+
             // ----------- Custom Section End -----------
 
             return builder.Build();

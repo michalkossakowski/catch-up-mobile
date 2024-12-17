@@ -1,0 +1,90 @@
+﻿@page "/recorder"
+@using Plugin.Maui.Audio
+
+@using CommunityToolkit.Maui.Storage
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
+@using catch_up_mobile.Dtos
+
+@inject IAudioManager AudioManager
+
+
+<div class="container text-center">
+
+    <h1>Recorder</h1>
+    <h4>@statusMessage</h4>
+
+    <div class="d-flex mt-3 mb-3 btn-group ">
+        <button class="btn btn-primary flex-fill" @onclick="StartRecording" >Start</button>
+        <button class="btn btn-danger flex-fill" @onclick="StopRecording" >Stop</button>
+        <button class="btn btn-info flex-fill" @onclick="PlayRecording" >Play</button>
+    </div>
+    <div class="d-grid  mx-auto mb-3">
+        <button class="btn btn-success" @onclick="SaveRecording">Save</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<IAudioSource> OnSendFile { get; set; }
+
+    private IAudioRecorder recorder;
+    private IAudioSource audioSource;
+    public string statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        statusMessage = "Welcome in recorder";
+        await RequestMicrophonePermission();
+        recorder = AudioManager.CreateRecorder();
+    }
+
+    private async Task RequestMicrophonePermission()
+    {
+        var status = await Permissions.RequestAsync<Permissions.Microphone>();
+    }
+
+    public async Task StartRecording()
+    {
+        statusMessage = "Recording ...";
+        await recorder.StartAsync();
+    }
+
+    public async Task StopRecording()
+    {
+        statusMessage = "Recording captured";
+        audioSource = await recorder.StopAsync();
+    }
+
+    private async Task PlayRecording()
+    {
+        if (audioSource != null)
+        {
+            var player = AudioManager.CreatePlayer(audioSource.GetAudioStream());
+            player.Play();
+        }
+    }
+
+    private async Task SaveRecording()
+    {
+        if (audioSource == null)
+        {
+            await Toast.Make("No recording available to save.").Show();
+            return;
+        }
+        var popup = new ConfirmPopup($"Do you want to send this file?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+                await OnSendFile.InvokeAsync(audioSource);
+            }
+            else
+            {
+                audioSource = null;
+            }
+        });
+        App.Current.MainPage.ShowPopup(popup);
+        statusMessage = "Welcome in recorder";
+    }
+}

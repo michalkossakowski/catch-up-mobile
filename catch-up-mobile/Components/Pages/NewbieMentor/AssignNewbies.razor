@@ -1,0 +1,150 @@
+﻿@page "/assign-newbies/{mentorId:guid}"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Dtos
+@using CommunityToolkit.Maui.Alerts
+@using System.Threading
+
+<div class="container mt-5">
+    <h2>Assign new Newbie to</h2>
+    <h2><b>@SelectedMentorName @SelectedMentorSurname</b></h2>
+    <br />
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Search by name or surname..." @bind="searchTerm" />
+        <span style="cursor: pointer" class="input-group-text" @onclick="OnSearchClick">
+            <i class="bi bi-search"></i>
+        </span>
+    </div>
+
+    @if (newbies == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <div>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Name")'>
+                            Name <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Surname")'>
+                            Surname <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th style="cursor: pointer" @onclick='() => SortNewbies("Position")'>
+                            Position <i class="bi bi-arrow-down-up"></i>
+                        </th>
+                        <th>
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (UserDto newbie in sortedNewbies)
+                    {
+                        <tr style="cursor: pointer"
+                            class="mentor-row @(newbie.Id == selectedMentorId ? "table-active" : "")">
+                            <td>@newbie.Name</td>
+                            <td>@newbie.Surname</td>
+                            <td>@newbie.Position</td>
+                            <td>
+                                <button class="btn btn-primary" @onclick="() => AssignNewbie(newbie.Id)">
+                                    Assign
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid MentorId { get; set; }
+    private List<UserDto> newbies;
+    private List<UserDto> sortedNewbies;
+    private string sortOrder = "Name";
+    private Guid selectedMentorId;
+    private bool sortAcs = true;
+    private string searchTerm = string.Empty;
+    private string searchClickedClass = "";
+    private string SelectedMentorName { get; set; }
+    private string SelectedMentorSurname { get; set; }
+    private string SelectedMentorPosition { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        SelectedMentorName = query["name"];
+        SelectedMentorSurname = query["surname"];
+        SelectedMentorPosition = query["position"];
+
+        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedNewbies/{MentorId}");
+        if (newbies != null)
+        {
+            sortedNewbies = newbies;
+        }
+    }
+
+    private void SortNewbies(string column)
+    {
+        if (sortOrder == column && sortAcs)
+        {
+            sortedNewbies = sortedNewbies.OrderByDescending(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+            sortAcs = false;
+        }
+        else if (sortOrder == column && !sortAcs)
+        {
+            sortedNewbies = sortedNewbies.OrderBy(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+            sortAcs = true;
+        }
+        else
+        {
+            sortedNewbies = sortedNewbies.OrderBy(m => m.GetType().GetProperty(column).GetValue(m, null)).ToList();
+        }
+        sortOrder = column;
+        ShowSortNotification();
+    }
+
+    private async Task ShowSortNotification()
+    {
+        string direction = sortAcs ? "ascending" : "descending";
+        string message = $"Sorted by {sortOrder} in {direction} order";
+        await Toast.Make(message).Show();
+    }
+
+    private void OnSearchClick()
+    {
+        FilterNewbies();
+        searchClickedClass = "clicked";
+    }
+
+    private void FilterNewbies()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            sortedNewbies = newbies;
+        }
+        else
+        {
+            sortedNewbies = newbies.Where(n =>
+                n.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                n.Surname.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+    private async Task AssignNewbie(Guid newbieId)
+    {
+        await _httpClient.PostAsync($"api/NewbieMentor/Assign/{newbieId}/{MentorId}", null);
+        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedNewbies/{MentorId}");
+        if (newbies != null)
+        {
+            sortedNewbies = newbies;
+        }
+        StateHasChanged();
+    }
+}

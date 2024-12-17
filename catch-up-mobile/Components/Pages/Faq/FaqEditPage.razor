@@ -1,15 +1,18 @@
-﻿@page "/faq/edit/{editedFaqId:int}"
+﻿@page "/faq/edit/{editedFaqId:int?}"
 
 @inject HttpClient _httpClient
+@inject CatchUpLocalDb _localDb
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@using CommunityToolkit.Maui.Alerts
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel.DataAnnotations.Schema
 
 <div class="container text-start">
 
-    <h2 class="text-center">Edit FAQ [@editedFaqId]</h2>
+    <h2 class="text-center">@(editedFaqId == null ? "Add New FAQ" : $"Edit FAQ [{editedFaqId}]")</h2>
 
     <EditForm Model="faqModel" OnValidSubmit="SaveFaq">
         <DataAnnotationsValidator />
@@ -33,11 +36,11 @@
 
 @code {
     [Parameter]
-    public int editedFaqId { get; set; }
+    public int? editedFaqId { get; set; }
 
     FaqDto editedFaq { get; set; }
-
     private FaqModel faqModel = new FaqModel();
+
     private class FaqModel
     {
         [Required(ErrorMessage = "Title is required")]
@@ -52,19 +55,45 @@
 
     protected override async Task OnInitializedAsync()
     {
-        editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
-        faqModel.Title = editedFaq.Title;
-        faqModel.Answer = editedFaq.Answer;
+        if (editedFaqId.HasValue)
+        {
+            editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
+            faqModel.Title = editedFaq.Title;
+            faqModel.Answer = editedFaq.Answer;
+        }
+        else
+        {
+            faqModel = new FaqModel();
+        }
     }
 
     private async Task SaveFaq()
     {
-        await _httpClient.PutAsJsonAsync($"/api/faq/edit/{editedFaqId}", faqModel);
-        NavigationManager.NavigateTo("/faqmanage");
+        if (editedFaqId.HasValue)
+        {
+            await _httpClient.PutAsJsonAsync($"api/faq/edit/{editedFaqId}", faqModel);
+            editedFaq.Title = faqModel.Title;
+            editedFaq.Answer = faqModel.Answer;
+            await _localDb.UpdateFaqAsync(editedFaq);
+            await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
+        }
+        else
+        {
+            await _httpClient.PostAsJsonAsync("api/faq/add", faqModel);
+            var newFaq = new FaqDto
+                {
+                    Title = faqModel.Title,
+                    Answer = faqModel.Answer
+                };
+            await _localDb.AddFaqAsync(newFaq);
+            await Toast.Make("FAQ successfully added").Show();
+        }
+
+        NavigationManager.NavigateTo("/faq");
     }
 
-    private async Task Cancel()
+    private void Cancel()
     {
-        NavigationManager.NavigateTo("/faqmanage");
+        NavigationManager.NavigateTo("/faq");
     }
 }

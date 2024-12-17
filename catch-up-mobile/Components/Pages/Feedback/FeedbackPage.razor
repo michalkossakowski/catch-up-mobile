@@ -152,11 +152,6 @@
         return "No title";
     }
 
-    private void OpenFeedbackEdit(int feedbackId)
-    {
-        NavigationManager.NavigateTo($"/feedback/edit/{feedbackId}");
-    }
-
     private async Task ConfirmDeleteFaq()
     {
         if (feedbackToDelete != null)

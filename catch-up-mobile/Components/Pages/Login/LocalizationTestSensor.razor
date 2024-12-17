@@ -17,35 +17,26 @@
 
     private async Task GetLocation()
     {
-        try
+        Location location = await Geolocation.GetLastKnownLocationAsync();
+        if (location == null)
         {
-            Location location = await Geolocation.GetLastKnownLocationAsync();
-
-            if (location == null)
-            {
-                locationMessage = "Unable to retrieve location";
-                return;
-            }
-
-            double latitude = location.Latitude;
-            double longitude = location.Longitude;
-            Toast.Make($"latitude: {latitude} longitude: {longitude}").Show();
-            string city = GetCityIfInside(latitude, longitude);
-
-            if (!string.IsNullOrEmpty(city))
-            {
-                locationMessage = $"You are in {city}";
-            }
-            else
-            {
-                locationMessage = "You are out of company cities";
-            }
+            locationMessage = "Unable to retrieve location";
+            return;
         }
-        catch (Exception ex)
+        double latitude = location.Latitude;
+        double longitude = location.Longitude;
+        Toast.Make($"latitude: {latitude} longitude: {longitude}").Show();
+        string city = GetCityIfInside(latitude, longitude);
+        if (!string.IsNullOrEmpty(city))
         {
-            locationMessage = $"Error: {ex.Message}";
+            locationMessage = $"You are in {city}";
+        }
+        else
+        {
+            locationMessage = "You are out of company cities";
         }
     }
+
     private string GetCityIfInside(double latitude, double longitude)
     {
         foreach (var city in citiesCoordinates)
@@ -62,8 +53,7 @@
                 return cityName;
             }
         }
-
-        return null;
+        return "";
     }
 
     //formuła Haversine'a https://en.wikipedia.org/wiki/Haversine_formula jakby ktoś chciał zrozumieć

@@ -1,4 +1,5 @@
-﻿@page "/assign-mentor-to-newbie"
+﻿@page "/newbies/{mentorId:guid}"
+
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 @using catch_up_mobile.Dtos
@@ -6,7 +7,9 @@
 @using System.Threading
 
 <div class="container mt-5">
-    <h2>List of Newbies</h2>
+    <h2>List of Newbies Assign to</h2> 
+    <h2><b>@SelectedMentorName @SelectedMentorSurname</b></h2>
+    <br />
     <div class="input-group mb-3">
         <input type="text" class="form-control" placeholder="Search by name or surname..." @bind="searchTerm" />
         <span style="cursor: pointer" class="input-group-text" @onclick="OnSearchClick">
@@ -16,7 +19,7 @@
 
     @if (newbies == null)
     {
-        <Loading />
+        <Loading/>
     }
     else
     {
@@ -33,8 +36,8 @@
                         <th style="cursor: pointer" @onclick='() => SortNewbies("Position")'>
                             Position <i class="bi bi-arrow-down-up"></i>
                         </th>
-                        <th style="cursor: pointer" @onclick='() => SortNewbies("AssignCount")'>
-                            Number of Mentors <i class="bi bi-arrow-down-up"></i>
+                        <th>
+                            Actions 
                         </th>
                     </tr>
                 </thead>
@@ -42,12 +45,15 @@
                     @foreach (UserDto newbie in sortedNewbies)
                     {
                         <tr style="cursor: pointer"
-                            @onclick="() => HandleNewbieClick(newbie.Id, newbie.Name, newbie.Surname, newbie.Position)"
-                            class="mentor-row @(newbie.Id == selectedNewbieId ? "table-active" : "")">
+                            class="mentor-row @(newbie.Id == selectedMentorId ? "table-active" : "")">
                             <td>@newbie.Name</td>
                             <td>@newbie.Surname</td>
                             <td>@newbie.Position</td>
-                            <td>@newbie.AssignCount</td>
+                            <td>
+                                <button class="btn btn-danger" @onclick="() => UnassignNewbie(newbie.Id)">
+                                    Unassign
+                                </button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -57,21 +63,28 @@
 </div>
 
 @code {
+    [Parameter] public Guid MentorId { get; set; }
     private List<UserDto> newbies;
     private List<UserDto> sortedNewbies;
     private string sortOrder = "Name";
-    private Guid selectedNewbieId;
+    private Guid selectedMentorId;
     private bool sortAcs = true;
     private string searchTerm = string.Empty;
-    private string searchClickedClass = ""; 
+    private string searchClickedClass = "";
+    private string SelectedMentorName { get; set; }
+    private string SelectedMentorSurname { get; set; }
+    private string SelectedMentorPosition { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllNewbies");
-        foreach (UserDto newbie in newbies)
-        {
-            newbie.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetMentorCountByNewbie/{newbie.Id}");
-        }
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        SelectedMentorName = query["name"];
+        SelectedMentorSurname = query["surname"];
+        SelectedMentorPosition = query["position"];
+
+        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{MentorId}");
         sortedNewbies = newbies;
     }
 
@@ -95,12 +108,6 @@
         ShowSortNotification();
     }
 
-    private void HandleNewbieClick(Guid newbieId, string name, string surname, string position)
-    {
-        Toast.Make($"Section for {name} {surname}").Show();
-        NavigationManager.NavigateTo($"/newbie-details/{newbieId}?name={name}&surname={surname}&position={position}");
-    }
-
     private async Task ShowSortNotification()
     {
         string direction = sortAcs ? "ascending" : "descending";
@@ -110,15 +117,15 @@
 
     private void OnSearchClick()
     {
-        FilterNewbies(); 
-        searchClickedClass = "clicked"; 
+        FilterNewbies();
+        searchClickedClass = "clicked";
     }
 
     private void FilterNewbies()
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            sortedNewbies = newbies; 
+            sortedNewbies = newbies;
         }
         else
         {
@@ -126,5 +133,12 @@
                 n.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 n.Surname.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
         }
+    }
+    private async Task UnassignNewbie(Guid newbieId)
+    {
+        await _httpClient.DeleteAsync($"api/NewbieMentor/Delete/{newbieId}/{MentorId}");
+        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{MentorId}");
+        sortedNewbies = newbies;
+        StateHasChanged();
     }
 }

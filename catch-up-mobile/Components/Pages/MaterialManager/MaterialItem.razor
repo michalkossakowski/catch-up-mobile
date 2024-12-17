@@ -119,8 +119,8 @@
         {
             try
             {
-                var newMaterial = new MaterialDto { Name = materialName };
-                var response = await _httpClient.PostAsJsonAsync($"api/material/Create", newMaterial);
+                var materialDto = new MaterialDto { Name = materialName };
+                var response = await _httpClient.PostAsJsonAsync($"api/material/Create", materialDto);
                 var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
                 if (responseContent != null)
                 {

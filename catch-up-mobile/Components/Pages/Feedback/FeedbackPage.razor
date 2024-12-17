@@ -5,6 +5,7 @@
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.Enums
 @using catch_up_mobile.SQLite
 @using CommunityToolkit.Maui.Alerts
 
@@ -46,13 +47,14 @@
                         <div class="accordion-body">
                                 @if (isAdmin)
                                 {
-                                    <strong>Sender:</strong>
-                                    <ul><li>@feedback.SenderId</li></ul>
+                                <strong>Sender:</strong>
+                                <ul><li>@GetUserFullName(feedback.SenderId)</li></ul>
+
                                 }
                                 else
                                 {
                                     <strong>Receiver:</strong>
-                                    <ul><li>@feedback.ReceiverId</li></ul>
+                                    <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
                                 }
                                 <strong>Description:</strong>
                                 <ul><li>@feedback.Description</li></ul>
@@ -64,7 +66,7 @@
                                 <ul><li>@feedback.ResourceType</li></ul>
 
                                 <strong>Resource title:</strong>
-                                <ul><li>@feedback.ResourceId</li></ul>
+                                <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
                             @if (isAdmin && !offlineMode)
                             {
                                 <div>
@@ -106,12 +108,18 @@
     private FeedbackDto feedbackToDelete;
     private bool offlineMode = true;
     private bool isAdmin = true;
+    private List<FaqDto> faqs;
+    private List<UserDto> users;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             feedbacks = await _httpClient.GetFromJsonAsync<List<FeedbackDto>>("api/feedback/GetAll");
+
+            faqs = await _httpClient.GetFromJsonAsync<List<FaqDto>>("api/faq/GetAll");
+
+            users = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/user/GetAll");
 
             await _localDb.DeleteAllFeedbacksAsync();
             foreach (var feedback in feedbacks)
@@ -122,8 +130,26 @@
         catch (Exception)
         {
             feedbacks = await _localDb.GetFeedbacksAsync();
+            faqs = await _localDb.GetFaqsAsync();
             offlineMode = true;
         }
+    }
+
+    private string GetUserFullName(Guid userId)
+    {
+        var user = users?.FirstOrDefault(u => u.Id == userId);
+        return user != null ? $"{user.Name} {user.Surname}" : "Unknown User";
+    }
+
+    private string GetResourceTitle(ResourceTypeEnum resourceType, int resourceId)
+    {
+        if (resourceType == ResourceTypeEnum.Faq)
+        {
+            var faq = faqs?.FirstOrDefault(f => f.Id == resourceId);
+            return faq?.Title ?? "No title";
+        }
+
+        return "No title";
     }
 
     private void OpenFeedbackEdit(int feedbackId)

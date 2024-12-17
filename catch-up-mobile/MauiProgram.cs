@@ -38,7 +38,6 @@ namespace catch_up_mobile
                 BaseAddress = new Uri("https://localhost:7097/")
             });
 
-
             //Record Audio
             builder.Services.AddSingleton(AudioManager.Current);
 

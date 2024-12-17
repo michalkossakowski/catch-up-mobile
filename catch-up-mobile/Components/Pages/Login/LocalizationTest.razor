@@ -1,4 +1,4 @@
-﻿@page "/localization-test"
+﻿@page "/localization-test2"
 @using CommunityToolkit.Maui.Alerts
 
 @inject HttpClient HttpClient
@@ -19,7 +19,7 @@
 
     @if (!string.IsNullOrEmpty(Message))
     {
-        <div class="alert alert-danger mt-3">@Message</div>
+        <div> @Message </div>
     }
 </div>
 
@@ -53,18 +53,11 @@
 
     private async Task<string> GetUserLocation()
     {
-        try
+        HttpResponseMessage response = await HttpClient.GetAsync("https://ipinfo.io/json");
+        if (response.IsSuccessStatusCode)
         {
-            var response = await HttpClient.GetAsync("https://ipinfo.io/json");
-            if (response.IsSuccessStatusCode)
-            {
-                var locationData = await response.Content.ReadFromJsonAsync<GeolocationResponse>();
-                return locationData?.Country;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Geolocalization error: {ex.Message}");
+            GeolocationResponse locationData = await response.Content.ReadFromJsonAsync<GeolocationResponse>();
+            return locationData?.Country;
         }
         return "Unknown";
     }

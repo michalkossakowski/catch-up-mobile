@@ -70,7 +70,6 @@
                             @if (isAdmin && !offlineMode)
                             {
                                 <div>
-                                    <button type="button" class="btn btn-primary" @onclick="() => OpenFeedbackEdit(feedback.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => feedbackToDelete = feedback">
                                         Delete
                                     </button>

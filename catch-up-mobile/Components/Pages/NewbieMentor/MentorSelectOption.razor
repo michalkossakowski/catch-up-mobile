@@ -9,10 +9,17 @@
     <h3 class="text-center">Position: @SelectedMentorPosition</h3>
 
     <div class="row justify-content-center mt-4">
-        <button class="btn btn-primary mx-2" @onclick="GoToNewbies">Go to @SelectedMentorName @SelectedMentorSurname Newbies</button>
-        <button class="btn btn-secondary mx-2" @onclick="AssignNewbie">Assign Newbie to @SelectedMentorName @SelectedMentorSurname</button>
+        <button class="btn btn-primary mb-3" @onclick="GoToNewbies">
+            Go to @SelectedMentorName @SelectedMentorSurname Newbies
+        </button>
+
+        <button class="btn btn-secondary d-block" @onclick="AssignNewbie">
+            Assign Newbie to @SelectedMentorName @SelectedMentorSurname
+        </button>
     </div>
 </div>
+
+
 
 @code {
     [Parameter] public Guid MentorId { get; set; }

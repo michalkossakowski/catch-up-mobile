@@ -1,0 +1,155 @@
+﻿@page "/schooling/edit/{editedSchoolingId:int?}"
+
+@using System.ComponentModel.DataAnnotations
+@using catch_up_mobile.Dtos
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+<h3>@(editedSchoolingId.HasValue ? "Edit Schooling" : "Add New Schooling")</h3>
+
+@if (categories == null)
+{
+    <Loading/>
+}
+else
+{
+    <EditForm Model="schoolingModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <InputText id="title" class="form-control" @bind-Value="schoolingModel.Title" />
+            <ValidationMessage For="() => schoolingModel.Title" />
+        </div>
+
+        <div class="mb-3">
+            <label for="category" class="form-label">Category</label>
+            <InputSelect id="category" class="form-control" @bind-Value="schoolingModel.CategoryId">
+                <option value="">-- Select Category --</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => schoolingModel.CategoryId" />
+        </div>
+
+        <div class="mb-3">
+            <label for="priority" class="form-label">Priority</label>
+            <InputNumber id="priority" class="form-control" @bind-Value="schoolingModel.Priority" />
+            <ValidationMessage For="() => schoolingModel.Priority" />
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <InputTextArea id="description" class="form-control" @bind-Value="schoolingModel.Description" />
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-primary">@((editedSchoolingId.HasValue ? "Save Changes" : "Add Schooling"))</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+        </div>
+    </EditForm>
+}
+@code {
+
+    [Parameter]
+    public int? editedSchoolingId { get; set; }
+
+    private SchoolingDto editedSchooling { get; set; }
+    private List<CategoryDto> categories;
+    private SchoolingModel schoolingModel = new SchoolingModel();
+
+    private class SchoolingModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Title must be at least 5 characters long")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Category is required")]
+        public int CategoryId { get; set; }
+
+        public string Description { get; set; }
+
+        [Required(ErrorMessage = "Priority is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Priority must be a positive value")]
+        public int Priority { get; set; }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        if (editedSchoolingId.HasValue)
+        {
+            await LoadSchooling();
+        }
+    }
+    private async Task HandleValidSubmit()
+    {
+        
+    }
+            /*
+private async Task SaveFaq()
+{
+    if (editedSchoolingId.HasValue)
+    {
+    await _httpClient.PutAsJsonAsync($"api/faq/edit/{editedFaqId}", faqModel);
+    editedFaq.Title = faqModel.Title;
+    editedFaq.Answer = faqModel.Answer;
+    await _localDb.UpdateFaqAsync(editedFaq);
+    await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
+    }
+    else
+    {
+    await _httpClient.PostAsJsonAsync("api/faq/add", faqModel);
+    var newFaq = new FaqDto
+            {
+            Title = faqModel.Title,
+            Answer = faqModel.Answer
+    };
+    await _localDb.AddFaqAsync(newFaq);
+    await Toast.Make("FAQ successfully added").Show();
+    }
+
+    NavigationManager.NavigateTo("/faq");
+}
+*/
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/schoolingList");
+    }
+    
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await _httpClient.GetFromJsonAsync<List<CategoryDto>>("api/category/GetAll");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading categories: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSchooling()
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<FullSchoolingDto>($"api/Schooling/GetFull/{editedSchoolingId}");
+            editedSchooling = response.Schooling;
+
+            schoolingModel.Title = editedSchooling.Title;
+            schoolingModel.CategoryId = editedSchooling.CategoryId;
+            schoolingModel.Priority = editedSchooling.Priority;
+            schoolingModel.Description = editedSchooling.Description;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading schooling: {ex.Message}");
+            NavigationManager.NavigateTo("/schoolingList");
+        }
+    }
+}

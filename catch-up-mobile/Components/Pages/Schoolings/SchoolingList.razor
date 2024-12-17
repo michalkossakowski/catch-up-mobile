@@ -10,7 +10,7 @@
 
 @page "/schoolingList"
 
-<div class="container">
+<div class="container mb-3">
     <h2 class="text-center">List of Schoolings</h2>
 
     @if (fullSchoolings == null)
@@ -21,7 +21,7 @@
     }
     else
     {
-        <div>
+        <div class="text-center">
             <input class="form-control" placeholder="Search by title" @oninput="OnSearchQueryChanged">
             <h4 class="mt-3">Filtr by Category</h4>
             <select class="form-select" @onchange="OnCategoryChanged">
@@ -62,7 +62,8 @@
                     </h2>
                     <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionSchoolingList">
                         <div class="accordion-body">
-                            <strong class="fs-3">Category: @category.Name</strong>
+                            <p class="fs-3 fw-bold">Category: @category.Name</p>
+                            <p class="fs-5 fw-bold">Priority: @schooling.Priority</p>
                             <p>@schooling.Description</p>
 
                             <div class="d-flex justify-content-between btn-group" role="group">
@@ -159,7 +160,7 @@
     }
     private void OpenSchoolingAdd()
     {
-        NavigationManager.NavigateTo("/schooling/add");
+        NavigationManager.NavigateTo($"/schooling/edit/");
     }
 
     private void OpenSchoolingEdit(int schoolingId)

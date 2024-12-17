@@ -1,4 +1,4 @@
-﻿namespace catch_up_backend.Dtos
+﻿namespace catch_up_mobile.Dtos
 {
     public class MaterialDto
     {

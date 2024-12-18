@@ -9,7 +9,7 @@
 <div class="container mt-5">
     <h2>Assign new Mentor to</h2>
     <h2><b>@SelectedNewbieName @SelectedNewbieSurname</b></h2>
-    <br />
+    <br/>
     <div class="input-group mb-3">
         <input type="text" class="form-control" placeholder="Search by name or surname..." @bind="searchTerm" />
         <span style="cursor: pointer" class="input-group-text" @onclick="OnSearchClick">
@@ -19,7 +19,9 @@
 
     @if (mentors == null)
     {
+        <div class="d-flex justify-content-center text-center">
         <Loading />
+        </div>
     }
     else
     {

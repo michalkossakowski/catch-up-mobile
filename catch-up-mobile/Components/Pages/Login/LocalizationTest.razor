@@ -1,0 +1,70 @@
+﻿@page "/localization-test2"
+@using CommunityToolkit.Maui.Alerts
+
+@inject HttpClient HttpClient
+
+<div class="container mt-5">
+    <h2 class="text-center">Loging test</h2>
+    <div class="mt-4">
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" class="form-control" @bind="Email" placeholder="Email" />
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Hasło</label>
+            <input type="password" id="password" class="form-control" @bind="Password" placeholder="Password" />
+        </div>
+        <button class="btn btn-primary w-100" @onclick="Login">Login</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div> @Message </div>
+    }
+</div>
+
+@code {
+    private string Email { get; set; }
+    private string Password { get; set; }
+    private string Message { get; set; }
+    private string UserCountry { get; set; }
+
+    private async Task Login()
+    {
+        Message = string.Empty;
+
+        UserCountry = await GetUserLocation();
+        //Toast.Make($"You are in: {UserCountry}").Show();
+        if (UserCountry != "PL")
+        {
+            Message = "Logging is anable only from Poland.";
+            return;
+        }
+        Toast.Make($"You are in: {UserCountry}").Show();
+        if (Email == "test@test.pl" && Password == "password")
+        {
+            Message = "Logged in successfully!";
+        }
+        else
+        {
+            Message = "Wrong email or password";
+        }
+    }
+
+    private async Task<string> GetUserLocation()
+    {
+        HttpResponseMessage response = await HttpClient.GetAsync("https://ipinfo.io/json");
+        if (response.IsSuccessStatusCode)
+        {
+            GeolocationResponse locationData = await response.Content.ReadFromJsonAsync<GeolocationResponse>();
+            return locationData?.Country;
+        }
+        return "Unknown";
+    }
+
+
+    private class GeolocationResponse
+    {
+        public string Country { get; set; }
+    }
+}

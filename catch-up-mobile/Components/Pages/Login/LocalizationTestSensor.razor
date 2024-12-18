@@ -1,0 +1,15 @@
+﻿@page "/localization-test"
+@inject IJSRuntime JSRuntime
+@using Microsoft.Maui.ApplicationModel
+@using Microsoft.Maui.Devices.Sensors
+@using System.Text.Json
+@using CommunityToolkit.Maui.Alerts
+
+<div class="d-flex justify-content-center">
+    <button class="btn btn-primary" @onclick="ComapnyLocator.GetLocation">Check your city</button>
+</div>
+<p class="text-center">@ComapnyLocator.locationMessage</p>
+
+@code {
+
+}

@@ -9,8 +9,12 @@
     <h3 class="text-center">Position: @SelectedNewbiePosition</h3>
 
     <div class="row justify-content-center mt-4">
-        <button class="btn btn-primary mx-2" @onclick="GoToNewbies">Go to @SelectedNewbieName @SelectedNewbieSurname Mentors</button>
-        <button class="btn btn-secondary mx-2" @onclick="AssignNewbie">Assign Mentor to @SelectedNewbieName @SelectedNewbieSurname</button>
+        <button class="btn btn-primary d-block mb-2" @onclick="GoToNewbies">
+            Go to @SelectedNewbieName @SelectedNewbieSurname Mentors
+        </button>
+        <button class="btn btn-secondary d-block" @onclick="AssignNewbie">
+            Assign Mentor to @SelectedNewbieName @SelectedNewbieSurname
+        </button>
     </div>
 </div>
 

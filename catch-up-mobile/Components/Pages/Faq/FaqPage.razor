@@ -26,64 +26,66 @@
         }
 
         <div class="accordion text-start mt-3 mb-3" id="accordionExample">
-            @if (faqs.Count() == 0)
+            @if (!faqs.Any())
             {
                 <div class="alert alert-warning text-center" role="alert">
-                   No FAQs found
+                    FAQ list is empty
                 </div>
             }
-            @for (int i = 0; i < faqs.Count; i++)
+            else
             {
-                var faq = faqs[i];
-                var collapseId = $"collapse{i}";
-                var headingId = $"heading{i}";
+                @for (int i = 0; i < faqs.Count; i++)
+                {
+                    var faq = faqs[i];
+                    var collapseId = $"collapse{i}";
+                    var headingId = $"heading{i}";
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="@headingId">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
-                            <strong>@(i+1). @faq.Title</strong>
-                        </button>
-                    </h2>
-                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
-                        <div class="accordion-body">
-                            @faq.Answer
-                            @if(faq.MaterialsId != null)
-                            {
-                                <br />
-                                <br />
-                                <p>Additional Materials:</p>
-
-                                @if (!offlineMode)
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="@headingId">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                <strong>@(i + 1). @faq.Title</strong>
+                            </button>
+                        </h2>
+                        <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                @faq.Answer
+                                @if (faq.MaterialsId != null)
                                 {
-                                    <div class="m-2">
-                                     
-                                        <MaterialItem 
-                                            materialId=faq.MaterialsId
-                                            showRemoveFile="false"
-                                            showDownloadFile="true"
-                                            showAddingFile="false" />
+                                    <br />
+                                    <br />
+                                    <p>Additional Materials:</p>
+
+                                    @if (!offlineMode)
+                                    {
+                                        <div class="m-2">
+
+                                            <MaterialItem materialId=faq.MaterialsId
+                                                          showRemoveFile="false"
+                                                          showDownloadFile="true"
+                                                          showAddingFile="false" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-warning text-center" role="alert">
+                                            Materials are avaliable only in online mode
+                                        </div>
+                                    }
+                                }
+
+                                @if (isAdmin && !offlineMode)
+                                {
+                                    <div class="d-flex mt-3 mb-3 btn-group ">
+                                        <button type="button" class="btn btn-primary" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
+                                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => faqToDelete = faq">
+                                            Delete
+                                        </button>
                                     </div>
                                 }
-                                else
-                                {
-                                    <div class="alert alert-warning text-center" role="alert">
-                                        Materials are avaliable only in online mode
-                                    </div>
-                                }
-                            }
-
-                            @if (isAdmin && !offlineMode) 
-                            {
-                                <div class="d-flex mt-3 mb-3 btn-group ">
-                                    <button type="button" class="btn btn-primary" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
-                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => faqToDelete = faq">
-                                        Delete
-                                    </button>
-                                </div>
-                            }
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
             }
         </div>
         if (isAdmin && !offlineMode)
@@ -105,7 +107,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <h5 class="modal-title text-center" id="deleteModalLabel">Confirm Deletion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -130,18 +132,30 @@
     {
         try
         {
-            faqs = await _httpClient.GetFromJsonAsync<List<FaqDto>>("api/faq/GetAll");
+            var response = await _httpClient.GetAsync("api/faq/GetAll", HttpCompletionOption.ResponseHeadersRead);
 
-            await _localDb.DeleteAllFaqsAsync();
-            foreach (var faq in faqs)
-                await _localDb.AddFaqAsync(faq);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                faqs = new List<FaqDto>();
+            }
+            else if (response.IsSuccessStatusCode)
+            {
+                faqs = await response.Content.ReadFromJsonAsync<List<FaqDto>>();
+                await _localDb.DeleteAllFaqsAsync();
+                foreach (var faq in faqs)
+                    await _localDb.AddFaqAsync(faq);
+            }
 
             offlineMode = false;
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
             faqs = await _localDb.GetFaqsAsync();
             offlineMode = true;
+            if(faqs.Any())
+            {
+                
+            }
         }
     }
 

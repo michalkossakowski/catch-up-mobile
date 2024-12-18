@@ -4,11 +4,12 @@ using CommunityToolkit.Maui.Alerts;
 public static class CompanyLocator
 {
     public static string locationMessage = "";
+    public static Location location;
     private static List<CompanyCityDto> cities;
     public static async Task GetLocation(CatchUpLocalDb _localDb)
     {
         cities = await _localDb.GetCitiesAsync();
-        Location location = await Geolocation.GetLastKnownLocationAsync();
+        location = await Geolocation.GetLastKnownLocationAsync();
         if (location == null)
         {
             locationMessage = "Unable to retrieve location";
@@ -28,6 +29,10 @@ public static class CompanyLocator
         }
     }
 
+    public static void OpenMap()
+    {
+        location.OpenMapsAsync();
+    }
     private static string GetCityIfInside(double latitude, double longitude)
     {
         foreach (var city in cities)

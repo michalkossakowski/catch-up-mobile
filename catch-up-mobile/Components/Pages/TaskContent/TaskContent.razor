@@ -1,9 +1,20 @@
 @page "/taskcontent"
 
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 @using catch_up_mobile.Dtos
+@using Microsoft.Maui.Devices.Sensors
+@implements IDisposable
 
 <h3>Task Content</h3>
+
+@if (offlineMode)
+{
+    <div class="alert alert-primary" role="alert">
+        You are working in offline mode
+    </div>
+}
 
 <EditForm Model="@newTaskContent" OnValidSubmit="@HandleValidSubmit">
     <DataAnnotationsValidator />
@@ -44,66 +55,157 @@
     <button type="submit" class="btn btn-primary">Add Task Content</button>
 </EditForm>
 
-<h4>Task Content List</h4>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Material</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var task in taskContents)
-        {
-            <tr>
-                <td>@task.Title</td>
-                <td>@task.Description</td>
-                <td>
-                    @(categories.FirstOrDefault(c => c.Id == task.CategoryId)?.Name ?? "No category")
-                </td>
-                <td>
-                    @if (task.MaterialsId.HasValue)
-                    {
-                        <span>Material ID: @task.MaterialsId</span>
-                    }
-                    else
-                    {
-                        <span>No material</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-primary btn-sm me-2" @onclick="() => HandleEdit(task)">
-                        Edit
-                    </button>
-                    <button class="btn btn-danger btn-sm" @onclick="() => HandleDelete(task.Id)">
-                        Delete
-                    </button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<h4 class="mt-5">Task Content List</h4>
+@if (taskContents == null)
+{
+    <div class="text-center">
+        <Loading/>
+    </div>
+}
+else
+{
+    @if (taskContents.Count == 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            No Task Contents found
+        </div>
+    }
+    else
+    {
+        
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th class="text-center">Title</th>
+                    <th class="text-center">Category</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var task in taskContents)
+                {
+                    <tr>
+                        <td class="text-center">@task.Title</td>
+                        <td class="text-center">
+                            @(categories.FirstOrDefault(c => c.Id == task.CategoryId)?.Name ?? "No category")
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-link p-0 me-3" @onclick="() => HandleView(task.Id)">
+                                <i class="bi bi-eye text-info"></i>
+                            </button>
+                            <button class="btn btn-link p-0 me-3" @onclick="() => HandleEdit(task)">
+                                <i class="bi bi-pencil-square text-primary"></i>
+                            </button>
+                            <button class="btn btn-link p-0" @onclick="() => HandleDelete(task.Id)">
+                                <i class="bi bi-trash text-danger"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
 
 @code {
     private TaskContentDto newTaskContent = new TaskContentDto();
     private List<CategoryDto> categories = new List<CategoryDto>();
     private List<MaterialDto> materials = new List<MaterialDto>();
     private List<TaskContentDto> taskContents = new List<TaskContentDto>();
-    private bool isEditing = false;
+    private IAccelerometer? accelerometer;
+    private bool isAccelerometerReady;
+    private DateTime lastShakeTime = DateTime.MinValue;
+    private const double ShakeThreshold = 1.3;
+    private const int ShakeCooldownMs = 1000;
+    private bool offlineMode = true;
 
     protected override async Task OnInitializedAsync()
     {
-        categories = await Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
-        materials = await Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
-        await LoadTaskContents();
+        try
+        {
+            await InitializeAccelerometer();
+            await base.OnInitializedAsync();
+            
+            taskContents = null;
+            
+            var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+            var materialsTask = Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
+            
+            categories = await categoriesTask;
+            materials = await materialsTask;
+            
+            await LoadTaskContents();
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task InitializeAccelerometer()
+    {
+        try
+        {
+            accelerometer = Accelerometer.Default;
+            if (accelerometer.IsSupported)
+            {
+                accelerometer.ReadingChanged += Accelerometer_ReadingChanged;
+                accelerometer.Start(SensorSpeed.UI);
+                isAccelerometerReady = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to initialize accelerometer: {ex.Message}");
+        }
+    }
+
+    private async void Accelerometer_ReadingChanged(object sender, AccelerometerChangedEventArgs e)
+    {
+        var reading = e.Reading;
+        var acceleration = Math.Sqrt(
+            reading.Acceleration.X * reading.Acceleration.X +
+            reading.Acceleration.Y * reading.Acceleration.Y +
+            reading.Acceleration.Z * reading.Acceleration.Z
+        );
+
+        if (acceleration > ShakeThreshold && 
+            (DateTime.Now - lastShakeTime).TotalMilliseconds > ShakeCooldownMs)
+        {
+            lastShakeTime = DateTime.Now;
+            await InvokeAsync(async () =>
+            {
+                taskContents = null;
+                StateHasChanged(); 
+                await Task.Delay(100);
+                await LoadTaskContents();
+                StateHasChanged();
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        if (isAccelerometerReady && accelerometer != null)
+        {
+            accelerometer.ReadingChanged -= Accelerometer_ReadingChanged;
+            accelerometer.Stop();
+        }
     }
 
     private async Task LoadTaskContents()
     {
-        taskContents = await Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+        try
+        {
+            taskContents = await Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+            if (taskContents == null)
+            {
+                taskContents = new List<TaskContentDto>();
+            }
+        }
+        catch (HttpRequestException)
+        {
+            taskContents = new List<TaskContentDto>();
+        }
     }
 
     private async Task HandleValidSubmit()
@@ -121,32 +223,26 @@
 
         newTaskContent.CreatorId = Guid.Parse("4f3c4e57-ea63-4c44-3390-08dd19ed7954");
 
-        HttpResponseMessage result;
-        if (isEditing)
-        {
-            result = await Http.PutAsJsonAsync($"api/TaskContent/Edit/{newTaskContent.Id}", newTaskContent);
-        }
-        else
-        {
-            result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);
-        }
+        var result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);
 
         if (result.IsSuccessStatusCode)
         {
             newTaskContent = new TaskContentDto();
-            isEditing = false;
             await LoadTaskContents();
         }
         else
         {
-            // Handle error
+            var errorMessage = await result.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"Error: {result.StatusCode} - {errorMessage}");
+            
+            errorMessage = $"Operation failed: {result.StatusCode} - {errorMessage}";
+            await JSRuntime.InvokeVoidAsync("alert", errorMessage);
         }
     }
 
-    private async Task HandleEdit(TaskContentDto task)
+    private void HandleEdit(TaskContentDto task)
     {
-        newTaskContent = task;
-        isEditing = true;
+        NavigationManager.NavigateTo($"/taskcontent/edit/{task.Id}");
     }
 
     private async Task HandleDelete(int taskId)
@@ -156,6 +252,11 @@
         {
             await LoadTaskContents();
         }
+    }
+
+    private void HandleView(int taskId)
+    {
+        NavigationManager.NavigateTo($"/taskcontent/{taskId}");
     }
 }
 

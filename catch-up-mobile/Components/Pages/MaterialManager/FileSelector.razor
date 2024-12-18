@@ -2,7 +2,7 @@
 @using CommunityToolkit.Maui.Views
 <hr>
 <div class="d-grid col-6 mx-auto">
-    <button type="button" class="btn btn-outline-primary" @onclick="PickFile">@(fileResult == null ? "Pick a File" : "Chane File")</button>
+    <button type="button" class="btn btn-outline-primary" @onclick="PickFile">@(fileResult == null ? "Pick a File" : "Change File")</button>
 </div>
 <hr>
 
@@ -46,6 +46,8 @@
             if (isConfirmed)
             {
                 await OnSendFile.InvokeAsync(fileResult);
+                fileResult = null;
+                StateHasChanged();
             }
         });
         App.Current.MainPage.ShowPopup(popup);

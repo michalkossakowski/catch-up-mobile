@@ -23,6 +23,12 @@
         <Loading/>
         </div>
     }
+    else if (mentors is not null && mentors.Count == 0)
+    {
+        <div class="d-flex justify-content-center text-center alert-warning">
+            <h3>There are no mentors on the list</h3>
+        </div>
+    }
     else
     {
         <div>
@@ -79,15 +85,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        try
+        {
 
-        SelectedNewbieName = query["name"];
-        SelectedNewbieSurname = query["surname"];
-        SelectedNewbiePosition = query["position"];
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
 
-        mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByNewbie/{NewbieId}");
-        sortedMentors = mentors;
+            SelectedNewbieName = query["name"];
+            SelectedNewbieSurname = query["surname"];
+            SelectedNewbiePosition = query["position"];
+
+
+            mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByNewbie/{NewbieId}");
+
+
+            if (mentors == null || !mentors.Any())
+            {
+                mentors = new List<UserDto>();
+                await Toast.Make("No mentors found for this newbie", CommunityToolkit.Maui.Core.ToastDuration.Long).Show();
+            }
+
+            sortedMentors = mentors;
+        }
+        catch (HttpRequestException httpEx)
+        {
+            await Toast.Make($"Network error: {httpEx.Message}", CommunityToolkit.Maui.Core.ToastDuration.Long).Show();
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"An unexpected error occurred: {ex.Message}", CommunityToolkit.Maui.Core.ToastDuration.Long).Show();
+        }
     }
 
     private void SortNewbies(string column)

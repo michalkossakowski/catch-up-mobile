@@ -18,7 +18,7 @@
 <section>
     @if (material != null)
     {
-        <h2>@material.Name</h2>
+        <h3>@material.Name</h3>
         <ul class="list-group">
             @foreach (var file in material.Files)
             {
@@ -54,7 +54,7 @@
                 </button>
                 <button type="button" class="btn btn-outline-secondary flex-grow-1 @(ActiveComponent == "FileSelector" ? "active" : "")"
                 @onclick='() => SetActiveComponent("FileSelector")'>
-                    <i class="bi bi-card-image"></i> Files
+                    <i class="bi bi-folder-plus"></i>
                 </button>
             </div>
         }

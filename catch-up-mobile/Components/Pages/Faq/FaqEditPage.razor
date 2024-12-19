@@ -9,37 +9,68 @@
 @using CommunityToolkit.Maui.Alerts
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel.DataAnnotations.Schema
+@using catch_up_mobile.Components.Pages.MaterialManager
 
 <div class="container text-start">
 
-    <h2 class="text-center">@(editedFaqId == null ? "Add New FAQ" : $"Edit FAQ [{editedFaqId}]")</h2>
+    @if(faqModel == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <h2 class="text-center">@(editedFaqId == null ? "Add New FAQ" : $"Edit FAQ [{editedFaqId}]")</h2>
 
-    <EditForm Model="faqModel" OnValidSubmit="SaveFaq">
-        <DataAnnotationsValidator />
+        <EditForm Model="faqModel" OnValidSubmit="SaveFaq">
+            <DataAnnotationsValidator />
 
-        <div>
-            <label for="Title">Title:</label>
-            <InputText id="Title" class="form-control" @bind-Value="faqModel.Title" placeholder="Enter title ..." />
-            <ValidationMessage For="@(() => faqModel.Title)" />
-        </div>
-        <br />
-        <div>
-            <label for="Answer">Answer:</label>
-            <InputTextArea rows="8" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
-            <ValidationMessage For="@(() => faqModel.Answer)" />
-        </div>
-        <br />
-        <button type="submit" class="btn btn-primary">Save FAQ</button>
-        <button type="button" class="btn btn-danger text-center" @onclick="Cancel">Cancel</button>
-    </EditForm>
+            <div>
+                <label for="Title">Title:</label>
+                <InputText id="Title" class="form-control" @bind-Value="faqModel.Title" placeholder="Enter title ..." />
+                <ValidationMessage For="@(() => faqModel.Title)" />
+            </div>
+            <br />
+            <div>
+                <label for="Answer">Answer:</label>
+                <InputTextArea rows="16" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
+                <ValidationMessage For="@(() => faqModel.Answer)" />
+            </div>
+            <br />
+            <label for="Materials">(Optional) Additional Materials:</label>
+            <div class="text-center">
+                @if (faqModel.MaterialsId != null)
+                {
+                    <MaterialItem materialId="faqModel.MaterialsId"
+                                  showRemoveFile="true"
+                                  showDownloadFile="true"
+                                  showAddingFile="true" />
+                    <button type="button" class="btn btn-secondary text-center" @onclick="RemoveMaterials">Remove Materials</button>
+                }
+                else
+                {
+                    <MaterialItem showRemoveFile="true"
+                                  showDownloadFile="true"
+                                  showAddingFile="true"
+                                  materialCreated="OnMaterialCreated" />
+                }
+            </div>
+            <div class="d-flex mt-3 mb-3 btn-group ">
+                <button type="button" class="btn btn-danger text-center" @onclick="Cancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save FAQ</button>
+            </div>
+        </EditForm>
+
+
+    }
 </div>
+
 
 @code {
     [Parameter]
     public int? editedFaqId { get; set; }
 
     FaqDto editedFaq { get; set; }
-    private FaqModel faqModel = new FaqModel();
+    private FaqModel faqModel;
 
     private class FaqModel
     {
@@ -50,6 +81,8 @@
         [Required(ErrorMessage = "Answer is required")]
         [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Answer must be at least 3 characters long")]
         public string Answer { get; set; }
+
+        public int? MaterialsId { get; set; }
     }
 
 
@@ -58,13 +91,20 @@
         if (editedFaqId.HasValue)
         {
             editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
+            faqModel = new FaqModel();
             faqModel.Title = editedFaq.Title;
             faqModel.Answer = editedFaq.Answer;
+            faqModel.MaterialsId = editedFaq.MaterialsId;
         }
         else
         {
             faqModel = new FaqModel();
         }
+    }
+
+    private async Task OnMaterialCreated(int createdMaterialId)
+    {
+        faqModel.MaterialsId = createdMaterialId;
     }
 
     private async Task SaveFaq()
@@ -74,6 +114,7 @@
             await _httpClient.PutAsJsonAsync($"api/faq/edit/{editedFaqId}", faqModel);
             editedFaq.Title = faqModel.Title;
             editedFaq.Answer = faqModel.Answer;
+            editedFaq.MaterialsId = faqModel.MaterialsId;
             await _localDb.UpdateFaqAsync(editedFaq);
             await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
         }
@@ -83,13 +124,19 @@
             var newFaq = new FaqDto
                 {
                     Title = faqModel.Title,
-                    Answer = faqModel.Answer
+                    Answer = faqModel.Answer,
+                    MaterialsId = faqModel.MaterialsId
                 };
             await _localDb.AddFaqAsync(newFaq);
             await Toast.Make("FAQ successfully added").Show();
         }
 
         NavigationManager.NavigateTo("/faq");
+    }
+
+    private void RemoveMaterials()
+    {
+        faqModel.MaterialsId = null;
     }
 
     private void Cancel()

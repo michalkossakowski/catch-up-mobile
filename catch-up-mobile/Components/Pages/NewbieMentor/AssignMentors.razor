@@ -23,6 +23,12 @@
         <Loading />
         </div>
     }
+    else if (mentors.Count == 0)
+    {
+        <div class="d-flex justify-content-center text-center alert-warning">
+            <h3>There are no mentors on the list</h3>
+        </div>
+    }
     else
     {
         <div>
@@ -87,7 +93,10 @@
         SelectedNewbiePosition = query["position"];
 
         mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedMentors/{NewbieId}");
-        sortedMentors = mentors;
+        if (mentors != null)
+        {
+            sortedMentors = mentors;
+        }
     }
 
     private void SortNewbies(string column)

@@ -6,6 +6,7 @@
 
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
+@using catch_up_mobile.Enums
 @using CommunityToolkit.Maui.Views
 @using CommunityToolkit.Maui.Alerts
 @using catch_up_mobile.Components.Pages.MaterialManager
@@ -83,6 +84,7 @@
                                         <button type="button" class="btn btn-danger" @onclick="() => DeleteFaq(faq)">
                                             Delete
                                         </button>
+                                        <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
                                     </div>
                                 }
                             </div>
@@ -190,6 +192,19 @@
             filteredFaqs = faqs
                 .Where(f => f.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .ToList();
+        }
+    }
+
+    private void NavigateToFeedback(int faqId)
+    {
+        try
+        {
+            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Faq}&resourceId={faqId}";
+            NavigationManager.NavigateTo(url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
         }
     }
 }

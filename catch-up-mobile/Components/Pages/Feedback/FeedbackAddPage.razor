@@ -1,0 +1,93 @@
+﻿@page "/feedback/add"
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+@using System.Text.Json
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.Enums
+@using CommunityToolkit.Maui.Alerts
+
+<h3>Add Feedback</h3>
+<div class="container">
+    <EditForm Model="feedback" OnValidSubmit="SubmitFeedback">
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <InputText id="title" class="form-control" @bind-Value="feedback.Title" />
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <InputTextArea id="description" class="form-control" @bind-Value="feedback.Description" />
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+    </EditForm>
+</div>
+
+@code {
+    private FeedbackDto feedback = new FeedbackDto
+    {
+        SenderId = Guid.Parse("ce7dcde6-c9ac-4874-7b48-08dd11616e81"), // Place a static user here until Krzys creates users
+        ReceiverId = Guid.Parse("11b48e3d-06e6-4def-dd96-08dd1c8e928c"), // Exactly like above
+        ResourceType = ResourceTypeEnum.Faq,
+        createdDate = DateTime.Now
+    };
+
+    private string errorMessage;
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "resourceId")]
+    public int ResourceId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "resourceType")]
+    public int ResourceTypeValue { get; set; }
+
+    private ResourceTypeEnum _resourceType;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+
+            feedback.ResourceId = ResourceId;
+            feedback.ResourceType = (ResourceTypeEnum)ResourceTypeValue;
+
+        }
+        catch (Exception ex)
+        {
+            System.Console.WriteLine($"Error in OnInitialized: {ex.Message}");
+            errorMessage = "Error initializing feedback form";
+            NavigationManager.NavigateTo("/faq");
+        }
+    }
+
+    private async Task SubmitFeedback()
+    {
+        try
+        {
+
+            var response = await _httpClient.PostAsJsonAsync("api/feedback/Add", feedback);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                await Toast.Make($"Feedback successfully added").Show();
+                NavigationManager.NavigateTo("/faq");
+            }
+            else
+            {
+                errorMessage = $"Error submitting feedback: {response.StatusCode} - {content}";
+                System.Diagnostics.Debug.WriteLine(errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Exception during submission: {ex}");
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/faq");
+    }
+}

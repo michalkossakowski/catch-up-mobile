@@ -1,0 +1,259 @@
+﻿@page "/localization-panel-admin"
+@inject IJSRuntime JSRuntime
+@inject CatchUpLocalDb _localDb
+@using Microsoft.Maui.ApplicationModel
+@using Microsoft.Maui.Devices.Sensors
+@using System.Text.Json
+@using CommunityToolkit.Maui.Alerts
+@using Dtos
+@using catch_up_mobile.SQLite
+@using CommunityToolkit.Maui.Views
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12 col-md-6">
+            <h3>Response</h3>
+            <p>@responseMessage</p>
+            <button class="btn btn-primary mb-2" @onclick="ToggleCityList">
+                @(isCityListExpanded ? "Hide Company Cities" : "Show Company Cities")
+            </button>
+
+            @if (isCityListExpanded)
+            {
+            <ul>
+                @if (cities != null && cities.Count > 0)
+                {
+                    @foreach (var city in cities)
+                    {
+                        <li style="font-size: 1.2rem; margin-bottom: 10px;">
+                            <strong>@city.cityName</strong>
+                            (Lat: @city.Latitude, Lng: @city.Longitude, Radius: @city.RadiusKm km)
+                            <div>
+                                    <button class="btn btn-danger mb-2" @onclick="() => DeleteCityPop(city)">Delete</button>
+                            <button class="btn btn-secondary mb-2" @onclick="() => CompanyLocator.OpenCompanyBuildingMap(city.Latitude, city.Longitude)">
+                                Open Map
+                            </button>
+                            </div>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li>No cities available.</li>
+                }
+            </ul>
+            }
+        </div>
+
+        <div class="col-12">
+            <hr style="border: 2px solid white;">
+        </div>
+
+        <div class="col-12 col-md-6">
+            <h3>Actions</h3>
+            <button class="btn btn-primary mb-2" @onclick="AddCity">Add City</button>
+            <button class="btn btn-danger mb-2" @onclick="DeleteAllCitiesPop">Delete All Cities</button>
+        </div>
+        <div class="col-12">
+            <hr style="border: 2px solid white;">
+        </div>
+
+        <div class="col-12">
+            <h3>Add New City</h3>
+            <div class="row">
+                <div class="col-12 col-md-3 mb-3">
+                    <label for="cityName" class="form-label">City Name</label>
+                    <input type="text" class="form-control" id="cityName" @bind="newCity.cityName">
+                </div>
+                <div class="col-12 col-md-3 mb-3">
+                    <label for="latitude" class="form-label">Latitude</label>
+                    <input type="number" class="form-control" id="latitude" @bind="newCity.Latitude">
+                </div>
+                <div class="col-12 col-md-3 mb-3">
+                    <label for="longitude" class="form-label">Longitude</label>
+                    <input type="number" class="form-control" id="longitude" @bind="newCity.Longitude">
+                </div>
+                <div class="col-12 col-md-3 mb-3">
+                    <label for="radiusKm" class="form-label">Radius (Km)</label>
+                    <input type="number" class="form-control" id="radiusKm" @bind="newCity.RadiusKm">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private List<CompanyCityDto> cities = new List<CompanyCityDto>();
+    private string responseMessage = string.Empty;
+    private bool isCityListExpanded = false;
+    private CompanyCityDto newCity = new CompanyCityDto();
+
+    /*
+    name  Latitude  Longitude Radius(Km)
+    { "Warsaw", (52.2297, 21.0122, 15) },
+    { "Krakow", (50.0647, 19.9450, 7) },
+    { "Gdansk", (54.3520, 18.6466, 8) },
+    { "Wroclaw", (51.1079, 17.0385, 8) },
+    { "Poznan", (52.4064, 16.9252, 10) },
+    { "Lodz", (51.7592, 19.4560, 10) },
+    { "Szczecin", (53.4285, 14.5528, 10) },
+    { "Bialystok", (53.1325, 23.1688, 7) },
+    { "Katowice", (50.2649, 19.0238, 7) }
+    */
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (_localDb == null)
+            {
+                responseMessage = "Database service (_localDb) is not available.";
+                return;
+            }
+
+            cities = await _localDb.GetCitiesAsync();
+            responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error during page initialization: " + ex.Message;
+        }
+    }
+
+    private async Task GetCityList()
+    {
+        try
+        {
+            if (_localDb == null)
+            {
+                responseMessage = "Database service (_localDb) is not available.";
+                return;
+            }
+
+            cities = await _localDb.GetCitiesAsync();
+            responseMessage = $"Fetched {cities.Count} city/cities from the database.";
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error fetching city list: " + ex.Message;
+        }
+    }
+    private async Task AddCity()
+    {
+        try
+        {
+            if (_localDb == null)
+            {
+                responseMessage = "Database service (_localDb) is not available.";
+                return;
+            }
+
+            if (string.IsNullOrEmpty(newCity.cityName))
+            {
+                responseMessage = "City name cannot be empty.";
+                return;
+            }
+            var existingCities = await _localDb.GetCitiesAsync();
+            if (existingCities.Any(c => c.cityName.Equals(newCity.cityName, StringComparison.OrdinalIgnoreCase)))
+            {
+                responseMessage = $"City '{newCity.cityName}' already exists in the database.";
+                return;
+            }
+
+            int result = await _localDb.AddCityAsync(newCity);
+            responseMessage = result > 0 ? "City added successfully!" : "Failed to add city.";
+            await GetCityList();
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error adding city: " + ex.Message;
+        }
+    }
+    private void DeleteCityPop(CompanyCityDto city)
+    {
+        ConfirmPopup popup = new ConfirmPopup($"Do you want to delete city {city.cityName}?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+                await DeleteCity(city);
+                StateHasChanged();
+            }
+            else
+            {
+                Toast.Make("Cities deletion canceled").Show();
+            }
+        });
+
+        App.Current.MainPage.ShowPopup(popup);
+    }
+    private async Task DeleteCity(CompanyCityDto cityToDelete)
+    {
+        try
+        {
+            if (cityToDelete == null)
+            {
+                responseMessage = "City is not specified.";
+                return;
+            }
+
+            // Usuwanie miasta z bazy danych
+            int result = await _localDb.DeleteCityAsync(cityToDelete);
+
+            if (result > 0)
+            {
+                responseMessage = $"City '{cityToDelete.cityName}' deleted successfully.";
+                cities.Remove(cityToDelete); // Usuwanie z listy lokalnej
+            }
+            else
+            {
+                responseMessage = $"Failed to delete the city '{cityToDelete.cityName}'.";
+            }
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error deleting city: " + ex.Message;
+        }
+    }
+    private void DeleteAllCitiesPop()
+    {
+        ConfirmPopup popup = new ConfirmPopup($"Do you want to delete all city?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+               await DeleteAllCities();
+                StateHasChanged();
+            }
+            else
+            {
+                Toast.Make("Cities deletion canceled").Show();
+            }
+        });
+
+        App.Current.MainPage.ShowPopup(popup);
+    }
+
+    private async Task DeleteAllCities()
+    {
+        try
+        {
+            if (_localDb == null)
+            {
+                responseMessage = "Database service (_localDb) is not available.";
+                return;
+            }
+
+            await _localDb.DeleteAllCitiesAsync();
+            responseMessage = "All cities have been deleted.";
+            cities.Clear();
+            await GetCityList();
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error deleting all cities: " + ex.Message;
+        }
+    }
+    private void ToggleCityList()
+    {
+        isCityListExpanded = !isCityListExpanded;
+    }
+}

@@ -15,6 +15,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FaqDto>().Wait();
             _database.CreateTableAsync<FeedbackDto>().Wait();
             _database.CreateTableAsync<CompanyCityDto>().Wait();
+            _database.CreateTableAsync<UserDto>().Wait();
         }
         // CompanyCities
         public Task<List<CompanyCityDto>> GetCitiesAsync()
@@ -27,9 +28,6 @@ namespace catch_up_mobile.SQLite
             return _database.InsertAsync(city);
         }
 
-            _database.CreateTableAsync<FeedbackDto>().Wait();
-
-            _database.CreateTableAsync<UserDto>().Wait();
         public Task<int> UpdateCityAsync(CompanyCityDto city)
         {
             return _database.UpdateAsync(city);

@@ -36,8 +36,8 @@
                 <ValidationMessage For="@(() => faqModel.Answer)" />
             </div>
             <br />
+            <label for="Materials">(Optional) Additional Materials:</label>
             <div class="text-center">
-                <label for="Materials">(Optional) Additional Materials:</label>
                 @if (faqModel.MaterialsId != null)
                 {
                     <MaterialItem materialId="faqModel.MaterialsId"
@@ -55,8 +55,8 @@
                 }
             </div>
             <div class="d-flex mt-3 mb-3 btn-group ">
-                <button type="submit" class="btn btn-primary">Save FAQ</button>
                 <button type="button" class="btn btn-danger text-center" @onclick="Cancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save FAQ</button>
             </div>
         </EditForm>
 

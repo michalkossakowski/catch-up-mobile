@@ -13,12 +13,37 @@ namespace catch_up_mobile.SQLite
 
             // TABLES
             _database.CreateTableAsync<FaqDto>().Wait();
+            _database.CreateTableAsync<FeedbackDto>().Wait();
+            _database.CreateTableAsync<CompanyCityDto>().Wait();
+        }
+        // CompanyCities
+        public Task<List<CompanyCityDto>> GetCitiesAsync()
+        {
+            return _database.Table<CompanyCityDto>().ToListAsync();
+        }
+
+        public Task<int> AddCityAsync(CompanyCityDto city)
+        {
+            return _database.InsertAsync(city);
+        }
 
             _database.CreateTableAsync<FeedbackDto>().Wait();
 
             _database.CreateTableAsync<UserDto>().Wait();
+        public Task<int> UpdateCityAsync(CompanyCityDto city)
+        {
+            return _database.UpdateAsync(city);
         }
 
+        public Task<int> DeleteCityAsync(CompanyCityDto city)
+        {
+            return _database.DeleteAsync(city);
+        }
+
+        public Task DeleteAllCitiesAsync()
+        {
+            return _database.DeleteAllAsync<CompanyCityDto>();
+        }
         // FAQ
         public Task<List<FaqDto>> GetFaqsAsync()
         {

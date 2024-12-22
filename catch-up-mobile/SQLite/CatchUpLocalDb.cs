@@ -15,6 +15,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FaqDto>().Wait();
             _database.CreateTableAsync<FeedbackDto>().Wait();
             _database.CreateTableAsync<CompanyCityDto>().Wait();
+            _database.CreateTableAsync<UserDto>().Wait();
         }
         // CompanyCities
         public Task<List<CompanyCityDto>> GetCitiesAsync()
@@ -93,5 +94,21 @@ namespace catch_up_mobile.SQLite
             return _database.DeleteAllAsync<FeedbackDto>();
         }
 
+        public Task<UserDto> GetUserAsync()
+        {
+            return _database.Table<UserDto>().FirstOrDefaultAsync();
+        }
+
+        public async Task<int> SaveUserAsync(UserDto user)
+        {
+            // we want only one user logged in so we clear all first
+            await _database.DeleteAllAsync<UserDto>();
+            return await _database.InsertAsync(user);
+        }
+
+        public Task ClearUserAsync()
+        {
+            return _database.DeleteAllAsync<UserDto>();
+        }
     }
 }

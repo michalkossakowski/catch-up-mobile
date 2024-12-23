@@ -26,7 +26,7 @@
                     {
                         <div class="card bg-light-subtle mb-3">
                             <div class="card-header">
-                                <stron class="fs-3">@part.Name</stron>
+                                <strong class="fs-3">@part.Name</strong>
                             </div>
                             <div class="card-body">
                                 @part.Content
@@ -87,9 +87,7 @@
                 await using var stream = await response.Content.ReadAsStreamAsync();
 
                 var fileName = $"{file.Name}";
-                // var saverProgress = new Progress<double>(percentage => ProgressBar.ProgressProperty = percentage);
                 var fileSaverResult = await FileSaver.SaveAsync(fileName, stream);
-                // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
 
                 if (fileSaverResult.IsSuccessful)
                     await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();

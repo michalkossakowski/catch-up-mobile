@@ -3,6 +3,8 @@
 @using System.ComponentModel.DataAnnotations
 @using catch_up_mobile.Dtos
 
+@using CommunityToolkit.Maui.Alerts
+
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 
@@ -22,7 +24,6 @@ else
             <InputText id="title" class="form-control" @bind-Value="schoolingModel.Title" />
             <ValidationMessage For="() => schoolingModel.Title" />
         </div>
-
         <div class="mb-3">
             <label for="category" class="form-label">Category</label>
             <InputSelect id="category" class="form-control" @bind-Value="schoolingModel.CategoryId">
@@ -34,7 +35,6 @@ else
             </InputSelect>
             <ValidationMessage For="() => schoolingModel.CategoryId" />
         </div>
-
         <div class="mb-3">
             <label for="priority" class="form-label">Priority</label>
             <InputNumber id="priority" class="form-control" @bind-Value="schoolingModel.Priority" />
@@ -46,14 +46,16 @@ else
             <InputTextArea id="description" class="form-control" @bind-Value="schoolingModel.Description" />
         </div>
 
-        <div class="d-flex justify-content-between">
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-outline-danger" style="--bs-btn-padding-x: 2.5rem;" @onclick="Cancel"><i class="bi-arrow-left-square fs-3"></i></button>
+            <div class="vr"></div>
             <button type="submit" class="btn btn-primary">@((editedSchoolingId.HasValue ? "Save Changes" : "Add Schooling"))</button>
-            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            <div class="vr"></div>
+            <button type="button" class="btn btn-outline-light @(editedSchoolingId.HasValue ? "" : "disabled")" style="--bs-btn-padding-x: 2.5rem;" @onclick="NavigateToAssignSchoolingParts"><i class="bi-arrow-right-square fs-3"></i></button>
         </div>
     </EditForm>
 }
 @code {
-
     [Parameter]
     public int? editedSchoolingId { get; set; }
 
@@ -61,16 +63,21 @@ else
     private List<CategoryDto> categories;
     private SchoolingModel schoolingModel = new SchoolingModel();
 
+
     private class SchoolingModel
     {
+        public int? id { get; set; }
+
         [Required(ErrorMessage = "Title is required")]
         [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Title must be at least 5 characters long")]
         public string Title { get; set; }
 
         [Required(ErrorMessage = "Category is required")]
-        public int CategoryId { get; set; }
+        public string CategoryId { get; set; }
 
-        public string Description { get; set; }
+        public string CreatorId { get; set; } = "fa9a9062-d20a-439d-5f46-08dd22df0c6b";
+
+        public string Description { get; set; } = "";
 
         [Required(ErrorMessage = "Priority is required")]
         [Range(1, int.MaxValue, ErrorMessage = "Priority must be a positive value")]
@@ -88,39 +95,43 @@ else
     }
     private async Task HandleValidSubmit()
     {
-        
-    }
-            /*
-private async Task SaveFaq()
-{
-    if (editedSchoolingId.HasValue)
-    {
-    await _httpClient.PutAsJsonAsync($"api/faq/edit/{editedFaqId}", faqModel);
-    editedFaq.Title = faqModel.Title;
-    editedFaq.Answer = faqModel.Answer;
-    await _localDb.UpdateFaqAsync(editedFaq);
-    await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
-    }
-    else
-    {
-    await _httpClient.PostAsJsonAsync("api/faq/add", faqModel);
-    var newFaq = new FaqDto
+        if (editedSchoolingId.HasValue)
+        {
+            try
             {
-            Title = faqModel.Title,
-            Answer = faqModel.Answer
-    };
-    await _localDb.AddFaqAsync(newFaq);
-    await Toast.Make("FAQ successfully added").Show();
+                schoolingModel.id = editedSchoolingId;
+                var response = await _httpClient.PutAsJsonAsync($"api/schooling/editSchooling", schoolingModel);
+                await Toast.Make("Schooling successfully edited").Show();
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in editing schooling {ex.Message}").Show();
+            }
+        }
+        else
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingModel);
+                var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
+                editedSchoolingId = responseContent.Schooling.Id;
+                await Toast.Make("Schooling successfully added").Show();
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in creating schooling {ex.Message}").Show();
+            }
+        }
     }
 
-    NavigationManager.NavigateTo("/faq");
-}
-*/
     private void Cancel()
     {
         NavigationManager.NavigateTo("/schoolingList");
     }
-    
+    private void NavigateToAssignSchoolingParts()
+    {
+        NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
+    }
 
     private async Task LoadCategories()
     {
@@ -142,7 +153,7 @@ private async Task SaveFaq()
             editedSchooling = response.Schooling;
 
             schoolingModel.Title = editedSchooling.Title;
-            schoolingModel.CategoryId = editedSchooling.CategoryId;
+            schoolingModel.CategoryId = editedSchooling.CategoryId.ToString();
             schoolingModel.Priority = editedSchooling.Priority;
             schoolingModel.Description = editedSchooling.Description;
         }

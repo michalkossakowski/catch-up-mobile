@@ -131,10 +131,6 @@ else
     {
         NavigationManager.NavigateTo("/schoolingList");
     }
-    private void NavigateToAssignSchoolingParts()
-    {
-        NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
-    }
 
     private async Task LoadCategories()
     {
@@ -165,5 +161,9 @@ else
             Console.WriteLine($"Error loading schooling: {ex.Message}");
             NavigationManager.NavigateTo("/schoolingList");
         }
+    }
+    private void NavigateToAssignSchoolingParts()
+    {
+        NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
     }
 }

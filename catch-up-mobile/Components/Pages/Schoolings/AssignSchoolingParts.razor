@@ -182,12 +182,11 @@
 
     private async Task CreateNewPart()
     {
-        await Toast.Make($"Not impelmented").Show();
+        NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}");
     }
     private async Task EditSchoolingPart(int partId)
     {
-        await Toast.Make($"Not impelmented").Show();
-
+        NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}/{partId}");
     }
     private async Task DeleteSchoolingPart(int partId)
     {

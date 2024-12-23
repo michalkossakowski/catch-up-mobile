@@ -1,6 +1,7 @@
 ﻿@page "/localization-test"
 @inject IJSRuntime JSRuntime
 @inject CatchUpLocalDb _localDb
+@inject HttpClient _httpClient
 @using Microsoft.Maui.ApplicationModel
 @using Microsoft.Maui.Devices.Sensors
 @using System.Text.Json
@@ -28,8 +29,8 @@
     private List<CompanyCityDto> cities = new List<CompanyCityDto>();
     private string responseMessage = string.Empty;
 
-    /*
-        name  Latitude  Longitude Radius(Km)
+        /*
+    name  Latitude  Longitude Radius(Km)
     { "Warsaw", (52.2297, 21.0122, 15) },
     { "Krakow", (50.0647, 19.9450, 7) },
     { "Gdansk", (54.3520, 18.6466, 8) },
@@ -50,13 +51,45 @@
                 responseMessage = "Database service (_localDb) is not available.";
                 return;
             }
-
+            try
+            {
+                string apiEndpoint = "api/CompanyCity/GetAllCities";
+                HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint);
+                string json = await response.Content.ReadAsStringAsync();
+                List<CompanyCityDto> apiCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+                if (apiCities != null && apiCities.Any())
+                {
+                    cities = apiCities;
+                    List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
+                    foreach (CompanyCityDto city in cities)
+                    {
+                        if (!existingCities.Any(ec => ec.cityName == city.cityName))
+                        {
+                            await _localDb.AddCityAsync(city);
+                        }
+                    }
+                    responseMessage = $"Loaded {cities.Count} city/cities from API.";
+                    return; 
+                }
+            }
+            catch (Exception apiEx)
+            {
+                responseMessage = $"Failed to load data from API: {apiEx.Message}.";
+            }
             cities = await _localDb.GetCitiesAsync();
-            responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
+            if (cities != null && cities.Any())
+            {
+                responseMessage = $"Loaded {cities.Count} city/cities from local database.";
+            }
+            else
+            {
+                responseMessage = "No cities found in local database.";
+            }
         }
         catch (Exception ex)
         {
             responseMessage = "Error during page initialization: " + ex.Message;
         }
     }
+
 }

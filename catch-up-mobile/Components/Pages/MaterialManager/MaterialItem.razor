@@ -4,6 +4,7 @@
 @using catch_up_mobile.Components.Pages.MaterialManager
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Components.Camera
+@using System.ComponentModel.DataAnnotations
 
 @using CommunityToolkit.Maui.Storage
 @using CommunityToolkit.Maui.Alerts
@@ -45,21 +46,21 @@
         {
             <div class="d-flex justify-content-between mt-3 mb-3 btn-group">
                 <button type="button"
-                        class="btn btn-outline-secondary flex-grow-1 w-100  @(ActiveComponent == "MicRecorder" ? "active" : "")"
-                        style="flex-basis: 33.33%;"
-                        @onclick='() => SetActiveComponent("MicRecorder")'>
+                class="btn btn-outline-secondary flex-grow-1 w-100  @(ActiveComponent == "MicRecorder" ? "active" : "")"
+                style="flex-basis: 33.33%;"
+                @onclick='() => SetActiveComponent("MicRecorder")'>
                     <i class="bi bi-mic"></i>
                 </button>
                 <button type="button"
-                        class="btn btn-outline-secondary flex-grow-1 w-100 @(ActiveComponent == "CamManager" ? "active" : "")"
-                        style="flex-basis: 33.33%;"
-                        @onclick='OpenCameraPage'>
+                class="btn btn-outline-secondary flex-grow-1 w-100 @(ActiveComponent == "CamManager" ? "active" : "")"
+                style="flex-basis: 33.33%;"
+                @onclick='OpenCameraPage'>
                     <i class="bi bi-camera"></i>
                 </button>
                 <button type="button"
-                        class="btn btn-outline-secondary flex-grow-1 w-100  @(ActiveComponent == "FileSelector" ? "active" : "")"
-                        style="flex-basis: 33.33%;"
-                        @onclick='() => SetActiveComponent("FileSelector")'>
+                class="btn btn-outline-secondary flex-grow-1 w-100  @(ActiveComponent == "FileSelector" ? "active" : "")"
+                style="flex-basis: 33.33%;"
+                @onclick='() => SetActiveComponent("FileSelector")'>
                     <i class="bi bi-folder-plus"></i> Files
                 </button>
             </div>
@@ -77,12 +78,16 @@
     }
     else
     {
-        <div class="input-group mb-3">
-            <input type="text" placeholder="Material's name" class="form-control" @bind="materialName" />
-            <button class="btn btn-outline-secondary" type="button" @onclick="CreateMaterial">
-                Create
-            </button>
-        </div>
+        <EditForm Model="materialModal" OnValidSubmit="CreateMaterial">
+            <DataAnnotationsValidator />
+            <div class="input-group mb-3">
+                <InputText type="text" class="form-control" placeholder="Material's name" @bind-Value="materialModal.Name" />
+                <ValidationMessage For="() => materialModal.Name" />
+                <button class="btn btn-outline-secondary" type="submit">
+                    Create
+                </button>
+            </div>
+        </EditForm>
     }
 </section>
 @code {
@@ -95,7 +100,14 @@
     private MaterialDto material { get; set; }
     private string? materialName { get; set; }
     private string ActiveComponent { get; set; }
+    private MaterialModel materialModal = new MaterialModel();
 
+    private class MaterialModel
+    {
+        [Required(ErrorMessage = "Material's name is required")]
+        [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Material's name must be at least 5 characters long")]
+        public string Name { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,28 +134,27 @@
 
     private async Task CreateMaterial()
     {
-        if (!string.IsNullOrEmpty(materialName))
-        {
-            try
-            {
-                var materialDto = new MaterialDto { Name = materialName };
-                var response = await _httpClient.PostAsJsonAsync($"api/material/Create", materialDto);
-                var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
-                if (responseContent != null)
-                {
-                    materialId = responseContent.Id;
-                    materialName = responseContent.Name;
-                    material = responseContent;
 
-                    if (materialId.HasValue)
-                        await materialCreated.InvokeAsync(materialId.Value);
-                }
-            }
-            catch (Exception ex)
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/material/Create", materialModal);
+            var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
+            if (responseContent != null)
             {
-                await Toast.Make($"Error in creating material {ex.Message}").Show();
+                materialId = responseContent.Id;
+                materialName = responseContent.Name;
+                material = responseContent;
+                material.Files = new List<FileDto>();
+
+                if (materialId.HasValue)
+                    await materialCreated.InvokeAsync(materialId.Value);
             }
         }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Error in creating material {ex.Message}").Show();
+        }
+        
     }
 
     private async Task RemoveFile(int fileId)

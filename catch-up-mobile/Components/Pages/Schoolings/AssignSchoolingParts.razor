@@ -6,45 +6,68 @@
 
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
-
 <div>
-    <h3>Schooling Parts:</h3
-    @if (fullSchoolingDto.Parts.Count() == 0)
+    <h3 class="text-center">Schooling Parts</h3>
+    @if (fullSchoolingDto == null)
     {
-        <p>No schooling parts found. Create new now !</p>
-        <button type="button" class="btn btn-outline-secondary" @onclick="() => CreateNewPart()">Create</button>
+        <div class="text-center mt-3">
+            <Loading/>
+        </div>
     }
-    else
-    {
-        <button type="button" class="btn btn-outline-secondary" @onclick="() => CreateNewPart()">Create</button>
-        <p>Schooling parts found: @fullSchoolingDto.Parts.Count().</p>
-        foreach (var part in fullSchoolingDto.Parts)
+    else{ 
+        @if (fullSchoolingDto.Parts.Count() == 0){
+            <div class="d-grid gap-2 text-center">
+                <p>No schooling parts found. Create new now !</p>
+                <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="() => CreateNewPart()">Create</button>
+            </div>
+        }
+        else
         {
-            <div class="card bg-light-subtle mb-3">
-                <div class="card-header">
-                    <strong class="fs-3">@part.Name</strong>
-                </div>
-                <div class="card-body">
-                    @part.Content
-                    @if (part.Materials != null)
-                    {
-                        <ol class="list-group list-group-numbered mt-3">
+            <button type="button" class="btn btn-success fs-1 addNewPart" @onclick="() => CreateNewPart()"><i class="bi bi-plus-circle"></i></button>
+            <div class="d-grid text-center mb-3 mt-3">
+                <h5>Schooling parts found: <i>@fullSchoolingDto.Parts.Count()</i>.</h5>
+            </div>
+            foreach (var part in fullSchoolingDto.Parts)
+            {
+                <div class="card bg-light-subtle mb-3">
+                    <div class="card-header">
+                        <strong class="fs-3">@part.Name</strong>
+                    </div>
+                    <div class="card-body">
+                        @part.Content
+                        @if (part.Materials != null)
+                        {
                             @foreach (var material in part.Materials)
                             {
-                                <MaterialItem materialId="material.Id"/>
+                                <MaterialItem materialId="material.Id"
+                                    showRemoveFile="true"
+                                    showDownloadFile="true"
+                                    showAddingFile="true" />
                             }
-                        </ol>
-                    }
+                        }
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-secondary text-center" @onclick="()=> RemoveMaterials(part.Id)">Remove Material</button>
+                            <button type="button" class="btn btn-secondary " @onclick="() => AddMaterial(part.Id)">Add Material</button>
+                        </div>  
+                    </div>
                 </div>
-            </div>
+            }
         }
     }
 </div>
+<style>
+.addNewPart{
+    position: fixed;
+    top: 85vh;
+    right: 10vw;
+    z-index: 3;
+}    
+</style>
 @code {
     [Parameter]
     public int editedSchoolingId { get; set; }
 
-    private FullSchoolingDto fullSchoolingDto { get; set; } = new FullSchoolingDto();
+    private FullSchoolingDto fullSchoolingDto { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,6 +85,16 @@
             Console.WriteLine($"Error loading schooling: {ex.Message}");
             NavigationManager.NavigateTo("/schoolingList");
         }
+    }
+
+    private async Task RemoveMaterials(int partId)
+    {
+        // Remove materials
+    }
+
+    private async Task AddMaterial(int partId)
+    {
+        // Add material
     }
 
     private async Task CreateNewPart()

@@ -70,7 +70,7 @@
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#schoolingDetailsModal" @onclick="() => SeeDetails(schooling.Id)">See More</button>
                                 @if (isAdmin && !offlineMode)
                                 {
-                                    <button type="button" class="btn btn-warning" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
+                                    <button type="button" class="btn btn-warning text-white" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
                                 }
                             </div>

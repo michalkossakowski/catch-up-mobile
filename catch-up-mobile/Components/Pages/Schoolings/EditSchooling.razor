@@ -7,12 +7,15 @@
 
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
-
-<h3>@(editedSchoolingId.HasValue ? "Edit Schooling" : "Add New Schooling")</h3>
+<div class="text-center">
+    <h3>@(editedSchoolingId.HasValue ? "Edit Schooling" : "Add New Schooling")</h3>
+</div>
 
 @if (categories == null)
 {
-    <Loading/>
+    <div class="text-center">
+        <Loading/>
+    </div>
 }
 else
 {

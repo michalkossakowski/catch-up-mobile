@@ -22,18 +22,18 @@
         <ul class="list-group">
             @foreach (var file in material.Files)
             {
-                <li class="list-group-item d-flex justify-content-between align-items-start">
+                <li class="list-group-item d-flex justify-content-between align-items-start fs-5 pt-2 pb-2">
                     @file.Name
                     <div>
                         @if (showRemoveFile)
                         {
-                            <a class="pe-2" @onclick="() => RemoveFile(file.Id)">
+                            <a class="me-3 p-2" @onclick="() => RemoveFile(file.Id)">
                                 <i class="bi bi-trash3 deleteIcon"></i>
                             </a>
                         }
                         @if (showDownloadFile)
                         {
-                            <a @onclick="() => DownloadFile(file.Id)">
+                            <a class="ms-3 p-2" @onclick="() => DownloadFile(file.Id)">
                                 <i class="bi bi-file-earmark-arrow-down downloadIcon"></i>
                             </a>
                         }

@@ -1,15 +1,62 @@
 ﻿@page "/localization-test"
 @inject IJSRuntime JSRuntime
+@inject CatchUpLocalDb _localDb
 @using Microsoft.Maui.ApplicationModel
 @using Microsoft.Maui.Devices.Sensors
 @using System.Text.Json
 @using CommunityToolkit.Maui.Alerts
+@using Dtos
+@using catch_up_mobile.SQLite
 
-<div class="d-flex justify-content-center">
-    <button class="btn btn-primary" @onclick="ComapnyLocator.GetLocation">Check your city</button>
+<div class="container mt-4">
+    <h1 class="text-center">City Localization Test</h1>
+
+    <div class="d-flex justify-content-center mb-3">
+        <button class="btn btn-primary" @onclick='() => CompanyLocator.GetLocation(_localDb)'>Check your city</button>
+    </div>
+    <p class="text-center">@CompanyLocator.locationMessage</p>
+
+    <div class="row">
+        <div class="col-12 col-md-6">
+            <h3>Response</h3>
+            <p>@responseMessage</p>
+        </div>
+    </div>
 </div>
-<p class="text-center">@ComapnyLocator.locationMessage</p>
 
 @code {
+    private List<CompanyCityDto> cities = new List<CompanyCityDto>();
+    private string responseMessage = string.Empty;
 
+    /*
+        name  Latitude  Longitude Radius(Km)
+    { "Warsaw", (52.2297, 21.0122, 15) },
+    { "Krakow", (50.0647, 19.9450, 7) },
+    { "Gdansk", (54.3520, 18.6466, 8) },
+    { "Wroclaw", (51.1079, 17.0385, 8) },
+    { "Poznan", (52.4064, 16.9252, 10) },
+    { "Lodz", (51.7592, 19.4560, 10) },
+    { "Szczecin", (53.4285, 14.5528, 10) },
+    { "Bialystok", (53.1325, 23.1688, 7) },
+    { "Katowice", (50.2649, 19.0238, 7) }
+     */
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (_localDb == null)
+            {
+                responseMessage = "Database service (_localDb) is not available.";
+                return;
+            }
+
+            cities = await _localDb.GetCitiesAsync();
+            responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error during page initialization: " + ex.Message;
+        }
+    }
 }

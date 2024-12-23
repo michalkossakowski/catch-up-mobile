@@ -1,4 +1,9 @@
 ﻿@using catch_up_mobile.Components.Pages.MaterialManager
+@inject CatchUpLocalDb DbContext
+@inject NavigationManager NavigationManager
+
+@using catch_up_mobile.SQLite
+
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">catch-up-mobile</a>
@@ -35,6 +40,16 @@
             </NavLink>
         </div>
         <div class="nav-item px-3">
+            <NavLink class="nav-link" href="assigntask">
+                <i class="bi-list-task fs-5" aria-hidden="true" style="margin-right: 12px"></i> Assign Task
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="tasks">
+                <i class="bi-list-task fs-5" aria-hidden="true" style="margin-right: 12px"></i> Tasks
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
             <NavLink class="nav-link" href="assignment">
                 <i class="bi-link fs-5" aria-hidden="true" style="margin-right: 12px"></i> Assignment
             </NavLink>
@@ -59,5 +74,23 @@
                 <i class="bi-pencil-square fs-5" aria-hidden="true" style="margin-right: 12px"></i> Feedbacks
             </NavLink>
         </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="localization-panel-admin">
+                <i class="bi-geo-alt-fill fs-5" aria-hidden="true" style="margin-right: 12px"></i> Localization Panel
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 mt-auto">
+            <button class="nav-link border-0 bg-transparent" @onclick="HandleLogout">
+                <i class="bi-box-arrow-right fs-5" aria-hidden="true" style="margin-right: 12px"></i> Logout
+            </button>
+        </div>
     </nav>
 </div>
+
+@code {
+    private async Task HandleLogout()
+    {
+        await DbContext.ClearUserAsync();
+        NavigationManager.NavigateTo("/login", true);
+    }
+}

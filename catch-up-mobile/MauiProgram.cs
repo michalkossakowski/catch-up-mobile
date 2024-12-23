@@ -33,7 +33,7 @@ namespace catch_up_mobile
             {
                 ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
             };
-            builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
+            builder.Services.AddSingleton(sp => new HttpClient(httpClientHandler)
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });

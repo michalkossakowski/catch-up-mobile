@@ -1,4 +1,41 @@
 ﻿@page "/"
-<div class="container text-center">
+
+<div class="container text-center my-4">
     <h2>Welcome back John Lennon</h2>
 </div>
+
+<div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
+    <ol class="carousel-indicators">
+        @for (var i = 0; i < ImageUrls.Count; i++)
+        {
+            <li data-bs-target="#carouselExampleIndicators" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")"></li>
+        }
+    </ol>
+
+    <div class="carousel-inner">
+        @foreach (var (url, index) in ImageUrls.Select((value, i) => (value, i)))
+        {
+            <div class="carousel-item @(index == 0 ? "active" : "")">
+                <img class="d-block w-100" src="@url" alt="Slide @(index + 1)">
+            </div>
+        }
+    </div>
+
+    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </a>
+    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </a>
+</div>
+
+@code {
+    private List<string> ImageUrls = new List<string>
+    {
+        "https://preview.redd.it/welcome-back-john-lennon-v0-1pi8qhw5ec6c1.png?width=640&crop=smart&auto=webp&s=049a8474b4853d9ab875cd0eb027f6d905489da7",
+        "https://via.placeholder.com/640x563/33C1FF/FFFFFF?text=Welcome",
+        "https://via.placeholder.com/640x563/75FF33/FFFFFF?text=Back"
+    };
+}

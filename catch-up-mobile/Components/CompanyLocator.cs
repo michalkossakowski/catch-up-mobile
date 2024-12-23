@@ -1,28 +1,16 @@
-﻿using CommunityToolkit.Maui.Alerts;
-
-public static class ComapnyLocator
+﻿using catch_up_mobile.Components.Pages.Login;
+using catch_up_mobile.Dtos;
+using catch_up_mobile.SQLite;
+using CommunityToolkit.Maui.Alerts;
+public static class CompanyLocator
 {
     public static string locationMessage = "";
-    private static readonly Dictionary<string, (double Latitude, double Longitude, double RadiusKm)> CitiesCoordinates = new Dictionary<string, (double Latitude, double Longitude, double RadiusKm)>()
+    public static Location location;
+    private static List<CompanyCityDto> cities;
+    public static async Task GetLocation(CatchUpLocalDb _localDb)
     {
-        { "Warsaw", (52.2297, 21.0122, 15) },
-        { "Krakow", (50.0647, 19.9450, 7) },
-        { "Gdansk", (54.3520, 18.6466, 8) },
-        { "Wroclaw", (51.1079, 17.0385, 8) },
-        { "Poznan", (52.4064, 16.9252, 10) },
-        { "Lodz", (51.7592, 19.4560, 10) },
-        { "Szczecin", (53.4285, 14.5528, 10) },
-        { "Bialystok", (53.1325, 23.1688, 7) },
-        { "Katowice", (50.2649, 19.0238, 7) }
-    };
-
-    public static Dictionary<string, (double Latitude, double Longitude, double RadiusKm)> GetCities()
-    {
-        return CitiesCoordinates;
-    }
-    public static async Task GetLocation()
-    {
-        Location location = await Geolocation.GetLastKnownLocationAsync();
+        cities = await _localDb.GetCitiesAsync();
+        location = await Geolocation.GetLastKnownLocationAsync();
         if (location == null)
         {
             locationMessage = "Unable to retrieve location";
@@ -42,14 +30,23 @@ public static class ComapnyLocator
         }
     }
 
+    public static void OpenUserMap()
+    {
+        location.OpenMapsAsync();
+    }
+    public static async Task OpenCompanyBuildingMap(double latitude, double longitude)
+    {
+        Location cityLocation = new Location(latitude,longitude);
+        await cityLocation.OpenMapsAsync();
+    }
     private static string GetCityIfInside(double latitude, double longitude)
     {
-        foreach (var city in CitiesCoordinates)
+        foreach (var city in cities)
         {
-            string cityName = city.Key;
-            double cityLatitude = city.Value.Latitude;
-            double cityLongitude = city.Value.Longitude;
-            double cityRadius = city.Value.RadiusKm;
+            string cityName = city.cityName;
+            double cityLatitude = city.Latitude;
+            double cityLongitude = city.Longitude;
+            double cityRadius = city.RadiusKm;
 
             double distance = CalculateDistance(latitude, longitude, cityLatitude, cityLongitude);
 

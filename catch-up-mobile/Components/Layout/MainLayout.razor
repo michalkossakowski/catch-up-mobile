@@ -1,13 +1,46 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject CatchUpLocalDb DbContext
 
-<div class="page">
-    <div class="sidebar fixed-top" style="position:sticky; top: 0">
-        <NavMenu />
+@using catch_up_mobile.SQLite
+
+@if (isAuthenticated)
+{
+    <div class="page">
+        <div class="sidebar fixed-top" style="position:sticky; top: 0">
+            <NavMenu />
+        </div>
+
+        <main>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
     </div>
+}
+else
+{
+    @Body
+}
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+@code {
+    private bool isAuthenticated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await DbContext.GetUserAsync();
+        isAuthenticated = user != null;
+
+        if (!isAuthenticated && NavigationManager.Uri != NavigationManager.BaseUri + "login")
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = await DbContext.GetUserAsync();
+        isAuthenticated = user != null;
+        StateHasChanged();
+    }
+}

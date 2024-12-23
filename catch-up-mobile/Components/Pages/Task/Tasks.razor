@@ -1,0 +1,49 @@
+﻿@page "/tasks"
+
+@inject HttpClient _httpClient
+
+@using catch_up_mobile.Dtos
+<h3>Tasks</h3>
+
+<div class="accordion" id="accordionExample">
+    @foreach (var card in cards)
+    {
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">@card.FullTask.Title</h5>
+                <p class="card-text">@card.Name</p>
+            </div>
+        </div>
+    }
+</div>
+
+
+@code {
+    private List<Card> cards = new List<Card>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        cards = new List<Card>();
+        List<FullTask> fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
+
+        foreach (var fullTask in fullTasks)
+        {
+            Card newCard = new Card();
+            newCard.FullTask = fullTask;
+            newCard.Name = await GetNewbieName(fullTask.NewbieId);
+            cards.Add(newCard);
+        }
+
+    }
+    private async Task<string> GetNewbieName(Guid? newbieId)
+    {
+        var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
+
+        return $"{user.Name} {user.Surname}";
+    }
+    class Card
+    {
+        public FullTask FullTask;
+        public string Name;
+    }
+}

@@ -23,23 +23,29 @@
         <Loading/>
         </div>
     }
+    else if (newbies.Count == 0)
+    {
+        <div class="d-flex justify-content-center text-center alert-warning">
+            <h3>There are no newbies on the list</h3>
+        </div>
+    }
     else
     {
         <div>
             <table class="table table-striped table-bordered">
                 <thead>
                     <tr>
-                        <th style="cursor: pointer" @onclick='() => SortNewbies("Name")'>
-                            Name <i class="bi bi-arrow-down-up"></i>
+                        <th style="cursor: pointer;vertical-align: middle; white-space: nowrap;" @onclick='() => SortNewbies("Name")'>
+                            Name<i class="bi bi-arrow-down-up"></i>
                         </th>
-                        <th style="cursor: pointer" @onclick='() => SortNewbies("Surname")'>
-                            Surname <i class="bi bi-arrow-down-up"></i>
+                        <th style="cursor: pointer;vertical-align: middle; white-space: nowrap;" @onclick='() => SortNewbies("Surname")'>
+                            Surname<i class="bi bi-arrow-down-up"></i>
                         </th>
-                        <th style="cursor: pointer" @onclick='() => SortNewbies("Position")'>
-                            Position <i class="bi bi-arrow-down-up"></i>
+                        <th style="cursor: pointer;vertical-align: middle; white-space: nowrap;" @onclick='() => SortNewbies("Position")'>
+                            Position<i class="bi bi-arrow-down-up"></i>
                         </th>
-                        <th>
-                            Actions 
+                        <th style="vertical-align: middle; white-space: nowrap;">
+                            Actions
                         </th>
                     </tr>
                 </thead>
@@ -87,7 +93,10 @@
         SelectedMentorPosition = query["position"];
 
         newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{MentorId}");
-        sortedNewbies = newbies;
+        if (newbies != null)
+        {
+            sortedNewbies = newbies;
+        }
     }
 
     private void SortNewbies(string column)

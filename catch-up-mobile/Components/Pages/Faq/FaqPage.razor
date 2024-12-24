@@ -47,13 +47,13 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="@headingId">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
-                                <strong>@(i + 1). @faq.Title</strong>
+                                <strong>@(i + 1). @faq.Question</strong>
                             </button>
                         </h2>
                         <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
                             <div class="accordion-body">
                                 @faq.Answer
-                                @if (faq.MaterialsId != null)
+                                @if (faq.MaterialId != null)
                                 {
                                     <br />
                                     <br />
@@ -63,7 +63,7 @@
                                     {
                                         <div class="m-2">
 
-                                            <MaterialItem materialId=faq.MaterialsId
+                                            <MaterialItem materialId=faq.MaterialId
                                                             showRemoveFile="false"
                                                             showDownloadFile="true"
                                                             showAddingFile="false" />
@@ -190,7 +190,7 @@
         else
         {
             filteredFaqs = faqs
-                .Where(f => f.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .Where(f => f.Question.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }

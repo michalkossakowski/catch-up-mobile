@@ -14,7 +14,7 @@ public partial class CameraPage : ContentPage
 		InitializeComponent();
     }
 
-    private async void Recapture(object sender, EventArgs e)
+    private void Recapture(object sender, EventArgs e)
     {
         //await OnSendFile.InvokeAsync(null);
         //await App.Current.MainPage.Navigation.PopModalAsync();
@@ -24,7 +24,7 @@ public partial class CameraPage : ContentPage
         CapturedImage.IsVisible = false;
     }
 
-    private async void CameraView_MediaCaptured(object sender, MediaCapturedEventArgs e)
+    private void CameraView_MediaCaptured(object sender, MediaCapturedEventArgs e)
     {
         var memoryStream = new MemoryStream();
         e.Media.CopyTo(memoryStream);

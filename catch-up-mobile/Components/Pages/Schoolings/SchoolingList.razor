@@ -2,8 +2,10 @@
 @using CommunityToolkit.Maui.Views
 
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
 
 @inject HttpClient _httpClient
+@inject CatchUpLocalDb _localDb
 @inject NavigationManager NavigationManager
 
 @page "/schoolingList"
@@ -59,7 +61,7 @@
 
                             <div class="d-flex justify-content-between btn-group" role="group">
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#schoolingDetailsModal" @onclick="() => SeeDetails(schooling.Id)">See More</button>
-                                @if (isAdmin)
+                                @if (hasAccess)
                                 {
                                     <button type="button" class="btn btn-warning text-white" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
@@ -70,16 +72,10 @@
                 </div>
             }
         </div>
-        if (isAdmin)
+        if (hasAccess)
         {
             <div class="d-grid mx-auto">
                 <button type="button" class="btn btn-success" @onclick="OpenSchoolingAdd">Add new Schooling</button>
-            </div>
-        }
-        else
-        {
-            <div class="alert alert-warning" role="alert">
-                You cannot add/edit/delete Schoolings in offline mode
             </div>
         }
     }
@@ -94,14 +90,20 @@
 
     private string searchQuery = string.Empty;
     private int? selectedCategoryId = null;
-    private bool isAdmin = true;
+    private bool hasAccess = false;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadSchoolings();
         await LoadCategories();
+        checkAccess();
     }
-
+    private void checkAccess()
+    {
+        var UserPosition = _localDb.GetUserAsync().Result.Type;
+        if (UserPosition == "Admin" || UserPosition == "Mentor")
+            hasAccess = true;
+    }
     private async Task LoadSchoolings()
     {
         try

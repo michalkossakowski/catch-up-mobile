@@ -180,11 +180,11 @@
         currentlyEditingPartId = partId;
     }
 
-    private async Task CreateNewPart()
+    private void CreateNewPart()
     {
         NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}");
     }
-    private async Task EditSchoolingPart(int partId)
+    private void EditSchoolingPart(int partId)
     {
         NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}/{partId}");
     }

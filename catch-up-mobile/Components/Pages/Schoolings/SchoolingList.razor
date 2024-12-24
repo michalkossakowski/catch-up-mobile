@@ -96,13 +96,22 @@
     {
         await LoadSchoolings();
         await LoadCategories();
-        checkAccess();
+        await checkAccess();
     }
-    private void checkAccess()
+    private async Task checkAccess()
     {
-        var UserPosition = _localDb.GetUserAsync().Result.Type;
-        if (UserPosition == "Admin" || UserPosition == "Mentor")
-            hasAccess = true;
+        try
+        {
+            var userId = (await _localDb.GetUserAsync()).Id;
+            var userPosition = await _httpClient.GetStringAsync($"api/User/GetRole/{userId}");
+            Console.WriteLine(userPosition);
+            if (userPosition == "Admin" || userPosition == "Mentor")
+                hasAccess = true;
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"User fetching error").Show();
+        }
     }
     private async Task LoadSchoolings()
     {

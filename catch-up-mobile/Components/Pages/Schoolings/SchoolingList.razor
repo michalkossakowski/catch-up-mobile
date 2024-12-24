@@ -2,10 +2,8 @@
 @using CommunityToolkit.Maui.Views
 
 @using catch_up_mobile.Dtos
-@using catch_up_mobile.SQLite
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb _localDb
 @inject NavigationManager NavigationManager
 
 @page "/schoolingList"
@@ -32,13 +30,6 @@
                 }
             </select>
         </div>
-        if (offlineMode)
-        {
-            <div class="alert alert-primary" role="alert">
-                You are working in offline mode
-            </div>
-        }
-
         <div class="accordion text-start mt-3 mb-3" id="accordionSchoolingList">
             @if (filteredSchoolings.Count() == 0)
             {
@@ -68,7 +59,7 @@
 
                             <div class="d-flex justify-content-between btn-group" role="group">
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#schoolingDetailsModal" @onclick="() => SeeDetails(schooling.Id)">See More</button>
-                                @if (isAdmin && !offlineMode)
+                                @if (isAdmin)
                                 {
                                     <button type="button" class="btn btn-warning text-white" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
@@ -79,7 +70,7 @@
                 </div>
             }
         </div>
-        if (isAdmin && !offlineMode)
+        if (isAdmin)
         {
             <div class="d-grid mx-auto">
                 <button type="button" class="btn btn-success" @onclick="OpenSchoolingAdd">Add new Schooling</button>
@@ -103,8 +94,8 @@
 
     private string searchQuery = string.Empty;
     private int? selectedCategoryId = null;
-    private bool offlineMode = true;
-    private bool isAdmin = true; // Waiting for ADMIN
+    private bool isAdmin = true;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadSchoolings();
@@ -117,11 +108,9 @@
         {
             fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
             FilterSchoolings();
-            offlineMode = false;
         }
         catch (Exception ex)
         {
-            offlineMode = true;
             await Toast.Make($"Schooling fetching error: {ex.Message}").Show();
         }
     }

@@ -138,6 +138,7 @@
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"api/material/Create", materialModal);
+            response.Content.ReadAsStringAsync();
             var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
             if (responseContent != null)
             {

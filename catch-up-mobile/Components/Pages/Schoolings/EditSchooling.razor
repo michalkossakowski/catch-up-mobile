@@ -2,9 +2,10 @@
 
 @using System.ComponentModel.DataAnnotations
 @using catch_up_mobile.Dtos
-
+@using catch_up_mobile.SQLite
 @using CommunityToolkit.Maui.Alerts
 
+@inject CatchUpLocalDb _localDb
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 <div class="text-center">
@@ -69,16 +70,14 @@ else
 
     private class SchoolingModel
     {
-        public int? id { get; set; }
-
-        [Required(ErrorMessage = "Title is required")]
-        [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Title must be at least 5 characters long")]
-        public string Title { get; set; }
+        public int? Id { get; set; }
 
         [Required(ErrorMessage = "Category is required")]
         public string CategoryId { get; set; }
 
-        public string CreatorId { get; set; } = "fa9a9062-d20a-439d-5f46-08dd22df0c6b";
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Title must be at least 5 characters long")]
+        public string Title { get; set; }
 
         public string Description { get; set; } = "";
 
@@ -102,7 +101,7 @@ else
         {
             try
             {
-                schoolingModel.id = editedSchoolingId;
+                schoolingModel.Id = editedSchoolingId;
                 var response = await _httpClient.PutAsJsonAsync($"api/schooling/editSchooling", schoolingModel);
                 await Toast.Make("Schooling successfully edited").Show();
             }
@@ -115,7 +114,15 @@ else
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingModel);
+                var schoolingDto = new SchoolingDto
+                    {
+                        CategoryId = int.Parse(schoolingModel.CategoryId),
+                        Title = schoolingModel.Title,
+                        Description = schoolingModel.Description,
+                        Priority = schoolingModel.Priority,
+                        CreatorId = _localDb.GetUserAsync().Result.Id
+                    };
+                var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingDto);
                 var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
                 editedSchoolingId = responseContent.Schooling.Id;
                 await Toast.Make("Schooling successfully added").Show();

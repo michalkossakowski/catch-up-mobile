@@ -1,5 +1,9 @@
 ﻿@page "/"
 
+@inject IJSRuntime JS
+@using catch_up_mobile.SQLite
+@inject CatchUpLocalDb _localDb
+
 <div class="container text-center my-4">
     <h2>Welcome back John Lennon</h2>
 </div>
@@ -38,4 +42,11 @@
         "https://via.placeholder.com/640x563/33C1FF/FFFFFF?text=Welcome",
         "https://via.placeholder.com/640x563/75FF33/FFFFFF?text=Back"
     };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fontSize = await _localDb.GetFontSizeAsync();
+        if (fontSize != null)
+            await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
+    }
 }

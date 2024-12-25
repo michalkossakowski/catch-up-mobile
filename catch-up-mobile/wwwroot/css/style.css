@@ -14,6 +14,28 @@
     --font-size: 20px;
 }
 
-.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p {
+/* Every element that will be affected by changing the font size*/
+.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p, b, .btn {
     font-size: var(--font-size) !important;
 }
+
+
+.bottom-panel {
+    padding: 10px 0px;
+    background-color: #2b0098;
+    font-weight: bold;
+    max-height: 20vw;
+}
+
+.bottom-panel .nav-link {
+    color: white;
+    width: 1px;
+}
+
+.bottom-panel .nav-link.active,
+.bottom-panel .nav-link:hover {
+    color: #edca62;
+}
+
+
+

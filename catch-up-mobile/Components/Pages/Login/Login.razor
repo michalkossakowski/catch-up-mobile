@@ -9,50 +9,47 @@
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
 
-<div class="vh-100 d-flex align-items-center justify-content-center">
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
+        <p>Logging in...</p>
+    </div>
+}
+else
+{
+<div class="vh-100 align-items-center justify-content-center">
     <div class="w-100">
         <div class="card border-0">
             <div class="card-body p-4">
-                @if (isLoading)
-                {
-                    <div class="text-center">
-                        <div class="spinner-border text-primary m-3" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                        <p>Logging in...</p>
+                <h3 class="card-title text-center mb-4">Login</h3>
+                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-group">
+                        <label class="form-label">Email:</label>
+                        <InputText @bind-Value="loginModel.Email" class="form-control form-control-lg" />
+                        <ValidationMessage For="@(() => loginModel.Email)" />
                     </div>
-                }
-                else
-                {
-                    <h3 class="card-title text-center mb-4">Login</h3>
-                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-                        <DataAnnotationsValidator />
 
-                        <div class="form-group">
-                            <label class="form-label">Email:</label>
-                            <InputText @bind-Value="loginModel.Email" class="form-control form-control-lg" />
-                            <ValidationMessage For="@(() => loginModel.Email)" />
-                        </div>
+                    <div class="form-group mt-4">
+                        <label class="form-label">Password:</label>
+                        <InputText type="password" @bind-Value="loginModel.Password" class="form-control form-control-lg" />
+                        <ValidationMessage For="@(() => loginModel.Password)" />
+                    </div>
 
-                        <div class="form-group mt-4">
-                            <label class="form-label">Password:</label>
-                            <InputText type="password" @bind-Value="loginModel.Password" class="form-control form-control-lg" />
-                            <ValidationMessage For="@(() => loginModel.Password)" />
-                        </div>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-4">@errorMessage</div>
+                    }
 
-                        @if (!string.IsNullOrEmpty(errorMessage))
-                        {
-                            <div class="alert alert-danger mt-4">@errorMessage</div>
-                        }
-
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
-                    </EditForm>
-                }
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
+                </EditForm>
             </div>
         </div>
     </div>
 </div>
-
+}
 @code {
     private class LoginModel
     {

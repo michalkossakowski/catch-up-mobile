@@ -94,7 +94,8 @@ namespace catch_up_mobile.SQLite
         {
             return _database.DeleteAllAsync<FeedbackDto>();
         }
-
+        
+        //Users
         public Task<UserDto> GetUserAsync()
         {
             return _database.Table<UserDto>().FirstOrDefaultAsync();

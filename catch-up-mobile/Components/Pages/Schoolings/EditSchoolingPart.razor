@@ -1,0 +1,117 @@
+﻿@page "/schooling/editSchoolingPart/{editedSchoolingId:int}/{editedSchoolingPartId:int?}"
+
+@using System.ComponentModel.DataAnnotations
+@using catch_up_mobile.Dtos
+
+@using CommunityToolkit.Maui.Alerts
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
+<div class="text-center">
+    <h3>@(editedSchoolingPartId.HasValue ? "Edit Schooling Part" : "Add New Schooling Part")</h3>
+</div>
+
+
+
+<EditForm Model="schoolingPartModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="PName" class="form-label">Part Name</label>
+        <InputText id="PName" class="form-control" @bind-Value="schoolingPartModel.Name" />
+        <ValidationMessage For="() => schoolingPartModel.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="Content" class="form-label">Content</label>
+        <InputTextArea id="Content" class="form-control" @bind-Value="schoolingPartModel.Content" />
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <button type="button" class="btn btn-outline-danger" style="--bs-btn-padding-x: 2.5rem;" @onclick="Cancel"><i class="bi-arrow-left-square fs-3"></i></button>
+        <div class="vr"></div>
+        <button type="submit" class="btn btn-primary">@((editedSchoolingPartId.HasValue ? "Save Changes" : "Add Part"))</button>
+    </div>
+</EditForm>
+@code {
+    [Parameter]
+    public int editedSchoolingId { get; set; }
+
+    [Parameter]
+    public int? editedSchoolingPartId { get; set; }
+
+    private SchoolingPartModel schoolingPartModel = new SchoolingPartModel();
+    private SchoolingPartDto editedSchoolingPart;
+
+    private class SchoolingPartModel
+    {
+        public int? id { get; set; }
+
+        [Required(ErrorMessage = "Schooling part name is required")]
+        [StringLength(int.MaxValue, MinimumLength = 5, ErrorMessage = "Schooling part name must be at least 5 characters long")]
+        public string Name { get; set; }
+
+        public string? Content { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (editedSchoolingPartId.HasValue)
+        {
+            await LoadSchoolingPart();
+        }
+    }
+
+    private async Task LoadSchoolingPart()
+    {
+        try
+        {
+            editedSchoolingPart = await _httpClient.GetFromJsonAsync<SchoolingPartDto>($"api/Schooling/GetSchoolingPart/{editedSchoolingPartId}");
+            schoolingPartModel.Name = editedSchoolingPart.Name;
+            schoolingPartModel.Content = editedSchoolingPart.Content;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading schooling part: {ex.Message}");
+            NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (editedSchoolingPartId.HasValue)
+        {
+            try
+            {
+                editedSchoolingPart.Name = schoolingPartModel.Name;
+                editedSchoolingPart.Content = schoolingPartModel.Content;
+                var response = await _httpClient.PutAsJsonAsync($"api/schooling/EditSchoolingPart", editedSchoolingPart);
+                await Toast.Make("Schooling part successfully edited").Show();
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in editing schooling part {ex.Message}").Show();
+            }
+        }
+        else
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync($"api/schooling/AddSchoolingPart/{editedSchoolingId}", schoolingPartModel);
+                var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
+                editedSchoolingPartId = responseContent.Schooling.Id;
+                await Toast.Make("Schooling part successfully added").Show();
+            }
+            catch (Exception ex)
+            {
+                await Toast.Make($"Error in creating schooling part {ex.Message}").Show();
+            }
+        }
+        NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo($"/schooling/assignParts/{editedSchoolingId}");
+    }
+}

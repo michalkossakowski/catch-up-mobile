@@ -1,0 +1,213 @@
+﻿@page "/schooling/assignParts/{editedSchoolingId:int}"
+
+@using catch_up_mobile.Components.Pages.MaterialManager
+@using catch_up_mobile.Dtos
+
+@using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+<div>
+    <h3 class="text-center">Schooling Parts</h3>
+    @if (fullSchoolingDto == null)
+    {
+        <div class="text-center mt-3">
+            <Loading/>
+        </div>
+    }
+    else{ 
+        @if (fullSchoolingDto.Parts.Count() == 0){
+            <div class="d-grid gap-2 text-center">
+                <p>No schooling parts found. Create new now !</p>
+                <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="() => CreateNewPart()">Create</button>
+            </div>
+        }
+        else
+        {
+            <button type="button" class="btn btn-success fs-1 addNewPart" @onclick="() => CreateNewPart()"><i class="bi bi-plus-circle"></i></button>
+            <div class="d-grid text-center mb-3 mt-3">
+                <h5>Schooling parts found: <i>@fullSchoolingDto.Parts.Count()</i>.</h5>
+            </div>
+            foreach (var part in fullSchoolingDto.Parts)
+            {
+                <div class="card bg-light-subtle mb-3">
+                    <div class="card-header">
+                        <strong class="fs-3">@part.Name</strong>
+                    </div>
+                    <div class="card-body">
+                        <p>@part.Content</p>
+                        <div class="mt-2">
+                            @if (part.Materials != null)
+                            {
+                                @foreach (var material in part.Materials)
+                                {
+                                    <MaterialItem materialId="material.Id"
+                                    showRemoveFile="true"
+                                    showDownloadFile="true"
+                                    showAddingFile="true" />
+                                }
+                            }
+                        </div>
+                        <hr class="mt-2 mb-4"/>
+                        <div class="d-grid gap-3">
+                            <div class="d-flex justify-content-between btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary flex-grow-1 w-100" style="flex-basis: 50%;" 
+                                @onclick="()=> RemoveMaterials(part.Id)"  
+                                data-bs-toggle="modal" 
+                                data-bs-target="#materialSelectionModal" 
+                                >Remove Material
+                                </button>
+                                <button type="button" class="btn btn-outline-primary flex-grow-1 w-100" style="flex-basis: 50%;" 
+                                @onclick="() => AddMaterial(part.Id)" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#materialSelectionModal"
+                                >Add Material
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between ">
+                                <button type="button" class="btn btn-primary flex-grow-1 w-100 btn-lg me-2" style="flex-basis: 67.5%;" @onclick="() => EditSchoolingPart(part.Id)">Edit Schooling Part</button>
+                                <button type="button" class="btn btn-outline-danger flex-grow-1 w-100 btn-lg ms-2" style="flex-basis: 24.5%;" @onclick="() => DeleteSchoolingPart(part.Id)"><i class="bi bi-x-lg"></i> Delete</button>
+                            </div>
+                        </div>  
+                    </div>
+                </div>
+            }
+            <MaterialSelector 
+                Materials="@materials" 
+                HeaderString="@headerString" 
+                OnSelectionChanged="HandleMaterialSelected " />
+        }
+    }    
+</div>
+<style>
+    .addNewPart{
+    position: fixed;
+    top: 85vh;
+    right: 10vw;
+    z-index: 3;
+    }    
+</style>
+@code {
+    [Parameter]
+    public int editedSchoolingId { get; set; }
+
+    private FullSchoolingDto fullSchoolingDto;
+    private int currentlyEditingPartId = 0;
+    private List<MaterialDto> materials = new List<MaterialDto>();
+    private string headerString = "";
+    private bool addingMaterial = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchooling();
+    }
+
+    private async Task LoadSchooling()
+    {
+        try
+        {
+            fullSchoolingDto = await _httpClient.GetFromJsonAsync<FullSchoolingDto>($"api/Schooling/GetFull/{editedSchoolingId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading schooling: {ex.Message}");
+            NavigationManager.NavigateTo("/schoolingList");
+        }
+    }
+
+    private async Task RemoveMaterials(int partId)
+    {
+        addingMaterial = false;
+        currentlyEditingPartId = partId;
+
+        var part = fullSchoolingDto.Parts.FirstOrDefault(p => p.Id == partId);
+        if (part != null && part.Materials != null && part.Materials.Any())
+        {
+            materials = fullSchoolingDto.Parts.Find(p => p.Id == partId).Materials;
+            headerString = "Select Materials to Remove";
+        }
+        else
+        {
+            await Toast.Make("No materials to remove for this part.").Show();
+        }
+    }
+
+    private async Task HandleMaterialSelected(List<int> selectedMaterialIds)
+    {
+        var part = fullSchoolingDto.Parts.FirstOrDefault(p => p.Id == currentlyEditingPartId);
+        if (part == null)
+            return;
+
+        if (!addingMaterial)
+        {
+            foreach (var materialId in selectedMaterialIds)
+            {
+                await _httpClient.DeleteAsync($"api/Schooling/ArchiveMaterialFromSchooling/{currentlyEditingPartId}/{materialId}");
+            }
+
+            part.Materials = part.Materials.Where(m => !selectedMaterialIds.Contains(m.Id)).ToList();
+            await Toast.Make("Selected materials removed successfully").Show();
+        }
+        else
+        {
+            foreach (var materialId in selectedMaterialIds)
+            {
+                var material = materials.FirstOrDefault(m => m.Id == materialId);
+                if (material != null)
+                {
+                    part.Materials.Add(material);
+                    await _httpClient.PostAsJsonAsync($"api/Schooling/AddMaterialToSchooling/{currentlyEditingPartId}/{materialId}", material);
+                }
+            }
+            await Toast.Make("Materials added successfully").Show();
+        }
+        StateHasChanged();
+    }
+
+    private async Task AddMaterial(int partId)
+    {
+        addingMaterial = true;
+        var response = await _httpClient.GetFromJsonAsync<List<MaterialDto>>($"api/Material/GetAllMaterials");
+        var materialsInParts = fullSchoolingDto.Parts.FirstOrDefault(p => p.Id == partId)?.Materials;
+
+        if (materialsInParts == null)
+            materialsInParts = new List<MaterialDto>();
+        
+
+        materials = response.Where(m => !materialsInParts.Any(mp => mp.Id == m.Id)).ToList();
+        headerString = "Select Materials to add";
+        currentlyEditingPartId = partId;
+    }
+
+    private void CreateNewPart()
+    {
+        NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}");
+    }
+    private void EditSchoolingPart(int partId)
+    {
+        NavigationManager.NavigateTo($"/schooling/editSchoolingPart/{editedSchoolingId}/{partId}");
+    }
+    private async Task DeleteSchoolingPart(int partId)
+    {
+        try
+        {
+            var popup = new ConfirmPopup($"Do you want to delete this schooling part?", async (isConfirmed) =>
+            {
+                if (isConfirmed)
+                {
+                    await _httpClient.DeleteAsync($"api/Schooling/ArchiveSchoolingPart/{partId}");
+                    await Toast.Make("Schooling successfully deleted").Show();
+                    fullSchoolingDto.Parts = fullSchoolingDto.Parts.Where(p => p.Id != partId).ToList();
+
+                    StateHasChanged();
+                }
+            });
+            App.Current.MainPage.ShowPopup(popup);
+        }
+        catch (Exception ex)
+        {
+            await Toast.Make($"Failed to delete schooling part: {ex.Message}").Show();
+        }
+    }
+}

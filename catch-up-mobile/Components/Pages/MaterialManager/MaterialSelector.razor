@@ -1,0 +1,66 @@
+﻿@using catch_up_mobile.Dtos
+
+<div class="modal fade" id="materialSelectionModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="materialSelectionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="materialSelectionLabel">@HeaderString</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="ClearSelectedMaterials"></button>
+            </div>
+            <div class="modal-body">
+                @if (Materials != null && Materials.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var material in Materials)
+                        {
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" value="@material.Id" id="@material.Id" @onchange="() => ToggleSelection(material.Id)" checked="@SelectedMaterials.Contains(material.Id)">
+                                <label class="form-check-label" for="@material.Id">@material.Name</label>
+                            </li>
+                        }
+                    </ul>
+                    <button class="btn btn-primary mt-3" data-bs-dismiss="modal" @onclick="SubmitSelection">Submit</button>
+                }
+                else
+                {
+                    <p>No materials available.</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @onclick="ClearSelectedMaterials">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<MaterialDto> Materials { get; set; } = new List<MaterialDto>();
+
+    [Parameter]
+    public string HeaderString { get; set; } = "Select Materials";
+
+    [Parameter]
+    public EventCallback<List<int>> OnSelectionChanged { get; set; }
+
+    private HashSet<int> SelectedMaterials { get; set; } = new HashSet<int>();
+
+    private void ToggleSelection(int materialId)
+    {
+        if (SelectedMaterials.Contains(materialId))
+            SelectedMaterials.Remove(materialId);
+        else
+            SelectedMaterials.Add(materialId);
+    }
+
+    private async Task SubmitSelection()
+    {
+        await OnSelectionChanged.InvokeAsync(SelectedMaterials.ToList());
+        SelectedMaterials.Clear();
+    }
+
+    private void ClearSelectedMaterials()
+    {
+        SelectedMaterials.Clear();
+    }
+}

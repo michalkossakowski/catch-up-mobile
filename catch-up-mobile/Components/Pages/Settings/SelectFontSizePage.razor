@@ -1,0 +1,55 @@
+﻿@page "/selectFontSize"
+@inject IJSRuntime JS
+
+@using System.Threading.Tasks
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@inject CatchUpLocalDb _localDb
+
+<div class="text-center">
+    <h3>Select Font Size:</h3>
+
+    <div class="btn-group btn-group-lg w-100" role="group" aria-label="fontSizez">
+        <button type="button" class="btn btn-success w-100" @onclick='() => ChangeFontSize("font-size-small")'>Small</button>
+        <button type="button" class="btn btn-warning w-100" @onclick='() => ChangeFontSize("font-size-medium")'>Medium</button>
+        <button type="button" class="btn btn-danger w-100" @onclick='() => ChangeFontSize("font-size-large")'>Large</button>
+    </div>
+
+    <div class="mt-3">
+        <p><b>@currentFontSize</b></p>
+    </div>
+
+    <div class="mt-3">
+        <p>Example text: Na długo zanim czas uzyskał imię, Pierwszy Mistrz Spinjitzu stworzył krainę Ninjago, używając do tego czterech magicznych Broni Spinjitzu: Kosy Wstrząsów, Nunczako Piorunów, Shurikenów Lodu, oraz Miecza Płomieni. Są tak potężne, że nikt nie może władać wszystkimi jednocześnie. Gdy Pierwszy Mistrz odszedł, jego dwaj synowie przysięgli, że będą strzec broni, jednak starszy z nich dał się zwieść ciemności i postanowił je ukraść. Doszło do ostatecznego pojedynku, młodszy z braci zwyciężył i strącił starszego do Krainy Cieni. Nastał pokój, a bronie zostały ukryte w bezpiecznym miejscu, młodszy brst wiedział jednak, że jego przeciwnik zaatakuje ponownie.</p>
+    </div>
+    <div class="mt-3">
+        <button type="button" class="btn btn-primary">Example Button</button>
+    </div>
+    <div class="mt-3">
+        <input class="form-control" placeholder="Example input"/>
+    </div>
+</div>
+
+@code {
+    public string currentFontSize = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetFontSize();
+    }
+
+    private async Task GetFontSize()
+    {
+        var fontSizeDto = await _localDb.GetFontSizeAsync();
+        currentFontSize = fontSizeDto?.FontSize ?? "font-size-medium"; 
+        await JS.InvokeVoidAsync("changeFontSize", currentFontSize);
+    }
+
+    private async Task ChangeFontSize(string fontSize)
+    {
+        await JS.InvokeVoidAsync("changeFontSize", fontSize);
+        var fontSizeDto = new FontSizeDto { FontSize = fontSize };
+        await _localDb.SaveFontSizeAsync(fontSizeDto);
+        await GetFontSize();
+    }
+}

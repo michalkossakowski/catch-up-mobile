@@ -16,6 +16,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FeedbackDto>().Wait();
             _database.CreateTableAsync<CompanyCityDto>().Wait();
             _database.CreateTableAsync<UserDto>().Wait();
+            _database.CreateTableAsync<FontSizeDto>().Wait();
         }
         // CompanyCities
         public Task<List<CompanyCityDto>> GetCitiesAsync()
@@ -93,7 +94,8 @@ namespace catch_up_mobile.SQLite
         {
             return _database.DeleteAllAsync<FeedbackDto>();
         }
-
+        
+        //Users
         public Task<UserDto> GetUserAsync()
         {
             return _database.Table<UserDto>().FirstOrDefaultAsync();
@@ -109,6 +111,26 @@ namespace catch_up_mobile.SQLite
         public Task ClearUserAsync()
         {
             return _database.DeleteAllAsync<UserDto>();
+        }
+
+        //Font Size
+        public Task<FontSizeDto> GetFontSizeAsync()
+        {
+            return _database.Table<FontSizeDto>().FirstOrDefaultAsync();
+        }
+
+        public Task<int> SaveFontSizeAsync(FontSizeDto fontSize)
+        {
+            var existingFontSize = _database.Table<FontSizeDto>().FirstOrDefaultAsync().Result;
+            if (existingFontSize != null)
+            {
+                existingFontSize.FontSize = fontSize.FontSize;
+                return _database.UpdateAsync(existingFontSize);
+            }
+            else
+            {
+                return _database.InsertAsync(fontSize);
+            }
         }
     }
 }

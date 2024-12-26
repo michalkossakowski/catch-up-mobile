@@ -1,41 +1,82 @@
 ﻿@page "/"
 
-<div class="container text-center my-4">
-    <h2>Welcome back John Lennon</h2>
+@inject IJSRuntime JS
+@using catch_up_mobile.SQLite
+@inject CatchUpLocalDb _localDb
+
+<div class="container text-center">
+    <h2>Welcome in CatchUp Mobile App</h2>
 </div>
 
-<div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
-    <ol class="carousel-indicators">
-        @for (var i = 0; i < ImageUrls.Count; i++)
-        {
-            <li data-bs-target="#carouselExampleIndicators" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")"></li>
-        }
-    </ol>
+<div>
+    <div class="container mt-4">
+        <div class="row">
 
-    <div class="carousel-inner">
-        @foreach (var (url, index) in ImageUrls.Select((value, i) => (value, i)))
-        {
-            <div class="carousel-item @(index == 0 ? "active" : "")">
-                <img class="d-block w-100" src="@url" alt="Slide @(index + 1)">
+            <!-- Tasks Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/task-batman-image.jpg" class="card-img-top" alt="Tasks Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-list-task fs-4"></i> Tasks
+                        </h5>
+                        <p class="card-text">Manage and track your tasks.</p>
+                        <NavLink class="btn btn-primary" href="tasks">Go to Tasks</NavLink>
+                    </div>
+                </div>
             </div>
-        }
-    </div>
 
-    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Previous</span>
-    </a>
-    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Next</span>
-    </a>
+            <!-- Schoolings Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/schooling-batman-image.jpg" class="card-img-top" alt="Schoolings Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-book fs-4"></i> Schoolings
+                        </h5>
+                        <p class="card-text">Access your schooling list and details.</p>
+                        <NavLink class="btn btn-primary" href="schoolingList">Go to Schoolings</NavLink>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedbacks Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/feedback-batman-image.jpg" class="card-img-top" alt="Feedbacks Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-pencil-square fs-4"></i> Feedbacks
+                        </h5>
+                        <p class="card-text">Submit and view feedbacks.</p>
+                        <NavLink class="btn btn-primary" href="feedback">Go to Feedbacks</NavLink>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/faq-batman-image.jpg" class="card-img-top" alt="FAQ Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-question-circle fs-4"></i> FAQ
+                        </h5>
+                        <p class="card-text">Find answers to frequently asked questions.</p>
+                        <NavLink class="btn btn-primary" href="faq">Go to FAQ</NavLink>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 @code {
-    private List<string> ImageUrls = new List<string>
+    protected override async Task OnInitializedAsync()
     {
-        "https://preview.redd.it/welcome-back-john-lennon-v0-1pi8qhw5ec6c1.png?width=640&crop=smart&auto=webp&s=049a8474b4853d9ab875cd0eb027f6d905489da7",
-        "https://via.placeholder.com/640x563/33C1FF/FFFFFF?text=Welcome",
-        "https://via.placeholder.com/640x563/75FF33/FFFFFF?text=Back"
-    };
+        var fontSize = await _localDb.GetFontSizeAsync();
+        if (fontSize != null)
+            await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
+    }
 }

@@ -145,7 +145,7 @@
         if (resourceType == ResourceTypeEnum.Faq)
         {
             var faq = faqs?.FirstOrDefault(f => f.Id == resourceId);
-            return faq?.Title ?? "No title";
+            return faq?.Question ?? "No title";
         }
 
         return "No title";

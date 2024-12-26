@@ -19,28 +19,28 @@
     }
     else
     {
-        <h2 class="text-center">@(editedFaqId == null ? "Add New FAQ" : $"Edit FAQ [{editedFaqId}]")</h2>
+        <h2 class="text-center">@(editedFaqId == null ? "Add New FAQ" : $"Edit FAQ '{editedFaqId}'")</h2>
 
         <EditForm Model="faqModel" OnValidSubmit="SaveFaq">
             <DataAnnotationsValidator />
 
             <div>
-                <label for="Title">Title:</label>
-                <InputText id="Title" class="form-control" @bind-Value="faqModel.Title" placeholder="Enter title ..." />
-                <ValidationMessage For="@(() => faqModel.Title)" />
+                <label for="Question">Question:</label>
+                <InputText id="Question" class="form-control" @bind-Value="faqModel.Question" placeholder="Enter question ..." />
+                <ValidationMessage For="@(() => faqModel.Question)" />
             </div>
             <br />
             <div>
                 <label for="Answer">Answer:</label>
-                <InputTextArea rows="16" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
+                <InputTextArea rows="10" id="Answer" class="form-control" @bind-Value="faqModel.Answer" placeholder="Enter answer ..." />
                 <ValidationMessage For="@(() => faqModel.Answer)" />
             </div>
             <br />
             <label for="Materials">(Optional) Additional Materials:</label>
             <div class="text-center">
-                @if (faqModel.MaterialsId != null)
+                @if (faqModel.MaterialId != null)
                 {
-                    <MaterialItem materialId="faqModel.MaterialsId"
+                    <MaterialItem materialId="faqModel.MaterialId"
                                   showRemoveFile="true"
                                   showDownloadFile="true"
                                   showAddingFile="true" />
@@ -74,15 +74,15 @@
 
     private class FaqModel
     {
-        [Required(ErrorMessage = "Title is required")]
-        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Title must be at least 3 characters long")]
-        public string Title { get; set; }
+        [Required(ErrorMessage = "Question is required")]
+        [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Question must be at least 3 characters long")]
+        public string Question { get; set; }
 
         [Required(ErrorMessage = "Answer is required")]
         [StringLength(int.MaxValue, MinimumLength = 3, ErrorMessage = "Answer must be at least 3 characters long")]
         public string Answer { get; set; }
 
-        public int? MaterialsId { get; set; }
+        public int? MaterialId { get; set; }
     }
 
 
@@ -92,9 +92,9 @@
         {
             editedFaq = await _httpClient.GetFromJsonAsync<FaqDto>($"api/faq/GetById/{editedFaqId}");
             faqModel = new FaqModel();
-            faqModel.Title = editedFaq.Title;
+            faqModel.Question = editedFaq.Question;
             faqModel.Answer = editedFaq.Answer;
-            faqModel.MaterialsId = editedFaq.MaterialsId;
+            faqModel.MaterialId = editedFaq.MaterialId;
         }
         else
         {
@@ -104,7 +104,7 @@
 
     private async Task OnMaterialCreated(int createdMaterialId)
     {
-        faqModel.MaterialsId = createdMaterialId;
+        faqModel.MaterialId = createdMaterialId;
     }
 
     private async Task SaveFaq()
@@ -112,9 +112,9 @@
         if (editedFaqId.HasValue)
         {
             await _httpClient.PutAsJsonAsync($"api/faq/edit/{editedFaqId}", faqModel);
-            editedFaq.Title = faqModel.Title;
+            editedFaq.Question = faqModel.Question;
             editedFaq.Answer = faqModel.Answer;
-            editedFaq.MaterialsId = faqModel.MaterialsId;
+            editedFaq.MaterialId = faqModel.MaterialId;
             await _localDb.UpdateFaqAsync(editedFaq);
             await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
         }
@@ -123,9 +123,9 @@
             await _httpClient.PostAsJsonAsync("api/faq/add", faqModel);
             var newFaq = new FaqDto
                 {
-                    Title = faqModel.Title,
+                    Question = faqModel.Question,
                     Answer = faqModel.Answer,
-                    MaterialsId = faqModel.MaterialsId
+                    MaterialId = faqModel.MaterialId
                 };
             await _localDb.AddFaqAsync(newFaq);
             await Toast.Make("FAQ successfully added").Show();
@@ -136,7 +136,7 @@
 
     private void RemoveMaterials()
     {
-        faqModel.MaterialsId = null;
+        faqModel.MaterialId = null;
     }
 
     private void Cancel()

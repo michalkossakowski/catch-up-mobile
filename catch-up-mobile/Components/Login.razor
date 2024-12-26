@@ -4,7 +4,6 @@
 @inject NavigationManager NavigationManager
 @inject CatchUpLocalDb DbContext
 @inject IBiometricAuthService BiometricAuth
-@inject CatchUpLocalDb _localDb
 
 @using System.Text.Json
 @using System.IdentityModel.Tokens.Jwt
@@ -12,6 +11,8 @@
 @using catch_up_mobile.SQLite
 @using Microsoft.Maui.Devices.Sensors
 @using CommunityToolkit.Maui.Alerts
+@using Plugin.Fingerprint
+@using Plugin.Fingerprint.Abstractions
 
 @if (isLoading)
 {
@@ -22,44 +23,42 @@
 }
 else
 {
-<div class="vh-100 align-items-center justify-content-center">
-    <div class="w-100">
-        <div class="card border-0">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">Login</h3>
-                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-                    <DataAnnotationsValidator />
+    <div class="vh-100 align-items-center justify-content-center">
+        <div class="w-100">
+            <div class="card border-0">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-4">Login</h3>
+                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
 
-                    <div class="form-group">
-                        <label class="form-label">Email:</label>
-                        <InputText @bind-Value="loginModel.Email" class="form-control form-control-lg" />
-                        <ValidationMessage For="@(() => loginModel.Email)" />
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">Email:</label>
+                            <InputText @bind-Value="loginModel.Email" class="form-control form-control-lg" />
+                            <ValidationMessage For="@(() => loginModel.Email)" />
+                        </div>
 
-                    <div class="form-group mt-4">
-                        <label class="form-label">Password:</label>
-                        <InputText type="password" @bind-Value="loginModel.Password" class="form-control form-control-lg" />
-                        <ValidationMessage For="@(() => loginModel.Password)" />
-                    </div>
+                        <div class="form-group mt-4">
+                            <label class="form-label">Password:</label>
+                            <InputText type="password" @bind-Value="loginModel.Password" class="form-control form-control-lg" />
+                            <ValidationMessage For="@(() => loginModel.Password)" />
+                        </div>
 
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger mt-4">@errorMessage</div>
-                    }
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger mt-4">@errorMessage</div>
+                        }
 
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
-                    </EditForm>
-
-                    <button @onclick="HandleFingerprintLogin" class="btn btn-primary btn-lg w-100 mt-4">
-                        <i class="bi bi-fingerprint me-2"></i> Use Fingerprint
-                    </button>
-                }
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
+                        </EditForm>
+                </div>
             </div>
         </div>
     </div>
-</div>
 }
+
 @code {
+    [Parameter]
+    public EventCallback OnLoginSuccessful {get; set; }
     private class LoginModel
     {
         public string Email { get; set; }
@@ -69,31 +68,15 @@ else
     private LoginModel loginModel = new();
     private string errorMessage;
     private bool isLoading;
-    private bool fingerprintEnabled = true;
     private string userCountry;
 
     private async Task<bool> CheckLocationAccess()
     {
         try
-        {
-            // Check if in Poland first
-            var response = await _httpClient.GetAsync("https://ipinfo.io/json");
-            if (!response.IsSuccessStatusCode)
-            {
-                errorMessage = "Unable to verify location.";
-                return false;
-            }
-
-            string UserCountry = await GetUserLocation();
-            if (UserCountry != "PL")
-            {
-                errorMessage = "Login is only available from Poland.";
-                return false;
-            }
-
-            // using CompanyLocator to check city
-            await CompanyLocator.GetLocation(_localDb);
-            if (CompanyLocator.locationMessage.Contains("out of company cities"))
+        {   
+            await FetchAndSaveCitiesFromApi();
+            await CompanyLocator.GetLocation(DbContext);
+            if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
             {
                 errorMessage = "You must be within a company city radius to login.";
                 return false;
@@ -128,7 +111,6 @@ else
         {
             if (!await CheckLocationAccess())
             {
-                isLoading = false;
                 return;
             }
 
@@ -140,7 +122,7 @@ else
                 if (tokens != null)
                 {
                     await SaveUserAsync(tokens.RefreshToken);
-                    NavigationManager.NavigateTo("/", true);
+                    await OnLoginSuccessful.InvokeAsync();
                 }
                 else
                 {
@@ -162,50 +144,43 @@ else
         }
     }
 
-    private async Task HandleFingerprintLogin()
+    private async Task FetchAndSaveCitiesFromApi()
     {
-        errorMessage = string.Empty;
-        isLoading = true;
         try
         {
-            if (!await CheckLocationAccess())
-            {
-                isLoading = false;
+            string apiEndpoint = "api/CompanyCity/GetAllCities";
+            HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint);
+
+            if (!response.IsSuccessStatusCode)
+            {;
+                errorMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
                 return;
             }
 
-            if (!await BiometricAuth.IsAvailableAsync())
+            string json = await response.Content.ReadAsStringAsync();
+            List<CompanyCityDto> apiCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+
+            if (apiCities == null || !apiCities.Any())
             {
-                errorMessage = "Fingerprint authentication is not available.";
+                errorMessage = "No cities received from API.";
                 return;
             }
 
-            var authenticated = await BiometricAuth.AuthenticateAsync("Fingerprint Login", "Authenticate to login");
-            if (authenticated)
-            {
-                var credentials = await DbContext.GetFingerprintCredentialsAsync();
-                if (credentials != null)
-                {
-                    loginModel.Email = credentials.Email;
-                    loginModel.Password = credentials.Password;
+            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
 
-                    await HandleLogin();
-                }
-                else
-                {
-                    isLoading = false;
-                    errorMessage = "No credentials stored for fingerprint login.";
-                }
-            }
-            else
+            foreach (CompanyCityDto city in apiCities)
             {
-                isLoading = false;
-                errorMessage = "Fingerprint authentication failed.";
+                if (!existingCities.Any(c => c.cityName.Equals(city.cityName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    await DbContext.AddCityAsync(city);
+                }
             }
+
+            errorMessage = $"Successfully fetched and saved {apiCities.Count} cities from API.";
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            errorMessage = "Error fetching cities from API: " + ex.Message;
         }
     }
 

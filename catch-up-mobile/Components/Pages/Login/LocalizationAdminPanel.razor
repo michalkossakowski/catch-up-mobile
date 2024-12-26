@@ -135,7 +135,7 @@
                 responseMessage = "Database service (_localDb) is not available.";
                 return;
             }
-            await FetchAndSaveCitiesFromApi();
+
             cities = await _localDb.GetCitiesAsync();
             responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
         }

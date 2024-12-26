@@ -3,11 +3,15 @@
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 @inject CatchUpLocalDb DbContext
+@inject IBiometricAuthService BiometricAuth
+@inject CatchUpLocalDb _localDb
 
 @using System.Text.Json
 @using System.IdentityModel.Tokens.Jwt
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
+@using Microsoft.Maui.Devices.Sensors
+@using CommunityToolkit.Maui.Alerts
 
 <div class="vh-100 d-flex align-items-center justify-content-center">
     <div class="w-100">
@@ -47,6 +51,10 @@
 
                         <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
                     </EditForm>
+
+                    <button @onclick="HandleFingerprintLogin" class="btn btn-primary btn-lg w-100 mt-4">
+                        <i class="bi bi-fingerprint me-2"></i> Use Fingerprint
+                    </button>
                 }
             </div>
         </div>
@@ -63,6 +71,55 @@
     private LoginModel loginModel = new();
     private string errorMessage;
     private bool isLoading;
+    private bool fingerprintEnabled = true;
+    private string userCountry;
+
+    private async Task<bool> CheckLocationAccess()
+    {
+        try
+        {
+            // Check if in Poland first
+            var response = await _httpClient.GetAsync("https://ipinfo.io/json");
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = "Unable to verify location.";
+                return false;
+            }
+
+            string UserCountry = await GetUserLocation();
+            if (UserCountry != "PL")
+            {
+                errorMessage = "Login is only available from Poland.";
+                return false;
+            }
+
+            // using CompanyLocator to check city
+            await CompanyLocator.GetLocation(_localDb);
+            if (CompanyLocator.locationMessage.Contains("out of company cities"))
+            {
+                errorMessage = "You must be within a company city radius to login.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Location verification failed.";
+            return false;
+        }
+    }
+
+    private async Task<string> GetUserLocation()
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync("https://ipinfo.io/json");
+        if (response.IsSuccessStatusCode)
+        {
+            GeolocationResponse locationData = await response.Content.ReadFromJsonAsync<GeolocationResponse>();
+            return locationData?.Country;
+        }
+        return "Unknown";
+    }
 
     private async Task HandleLogin()
     {
@@ -71,50 +128,25 @@
 
         try
         {
+            if (!await CheckLocationAccess())
+            {
+                isLoading = false;
+                return;
+            }
+
             var response = await _httpClient.PostAsJsonAsync("api/Auth/Login", loginModel);
 
             if (response.IsSuccessStatusCode)
             {
                 var tokens = await response.Content.ReadFromJsonAsync<TokenResponse>();
-
-                if (tokens == null)
+                if (tokens != null)
+                {
+                    await SaveUserAsync(tokens.RefreshToken);
+                    NavigationManager.NavigateTo("/", true);
+                }
+                else
                 {
                     errorMessage = "Invalid response from server";
-                    return;
-                }
-
-                try
-                {
-                    // decode refresh token to get user ID
-                    var handler = new JwtSecurityTokenHandler();
-                    var token = handler.ReadJwtToken(tokens.RefreshToken);
-                    var userId = token.Claims.First(c => c.Type == "nameid").Value;
-
-                    // get user details
-                    var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
-
-                    if (userResponse != null)
-                    {
-                        // user is being saved into local database
-                        await DbContext.SaveUserAsync(new UserDto
-                            {
-                                Id = userResponse.Id,
-                                Name = userResponse.Name,
-                                Surname = userResponse.Surname,
-                                Email = userResponse.Email,
-                                Position = userResponse.Position,
-                            });
-
-                        NavigationManager.NavigateTo("/", true); // go to home page
-                    }
-                    else
-                    {
-                        errorMessage = "Failed to retrieve user details";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errorMessage = "Error processing user data";
                 }
             }
             else
@@ -124,7 +156,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = ex.ToString();
+            errorMessage = ex.Message;
         }
         finally
         {
@@ -132,9 +164,83 @@
         }
     }
 
+    private async Task HandleFingerprintLogin()
+    {
+        errorMessage = string.Empty;
+        isLoading = true;
+        try
+        {
+            if (!await CheckLocationAccess())
+            {
+                isLoading = false;
+                return;
+            }
+
+            if (!await BiometricAuth.IsAvailableAsync())
+            {
+                errorMessage = "Fingerprint authentication is not available.";
+                return;
+            }
+
+            var authenticated = await BiometricAuth.AuthenticateAsync("Fingerprint Login", "Authenticate to login");
+            if (authenticated)
+            {
+                var credentials = await DbContext.GetFingerprintCredentialsAsync();
+                if (credentials != null)
+                {
+                    loginModel.Email = credentials.Email;
+                    loginModel.Password = credentials.Password;
+
+                    await HandleLogin();
+                }
+                else
+                {
+                    isLoading = false;
+                    errorMessage = "No credentials stored for fingerprint login.";
+                }
+            }
+            else
+            {
+                isLoading = false;
+                errorMessage = "Fingerprint authentication failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task SaveUserAsync(string refreshToken)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(refreshToken);
+        var userId = token.Claims.First(c => c.Type == "nameid").Value;
+
+        var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
+        if (userResponse != null)
+        {
+            await DbContext.SaveUserAsync(new UserDto
+                {
+                    Id = userResponse.Id,
+                    Name = userResponse.Name,
+                    Surname = userResponse.Surname,
+                    Email = userResponse.Email,
+                    Position = userResponse.Position
+                });
+            await DbContext.DeleteFingerprintCredentialsAsync();
+            await DbContext.SaveFingerprintCredentialsAsync(userResponse.Email, loginModel.Password);
+        }
+    }
+
     private class TokenResponse
     {
         public string AccessToken { get; set; }
         public string RefreshToken { get; set; }
+    }
+
+    private class GeolocationResponse
+    {
+        public string Country { get; set; }
     }
 }

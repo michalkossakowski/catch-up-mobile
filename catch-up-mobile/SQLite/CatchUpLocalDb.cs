@@ -15,6 +15,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FaqDto>().Wait();
             _database.CreateTableAsync<FeedbackDto>().Wait();
             _database.CreateTableAsync<CompanyCityDto>().Wait();
+            _database.CreateTableAsync<FingerprintCredentials>().Wait();
             _database.CreateTableAsync<UserDto>().Wait();
         }
         // CompanyCities
@@ -109,6 +110,21 @@ namespace catch_up_mobile.SQLite
         public Task ClearUserAsync()
         {
             return _database.DeleteAllAsync<UserDto>();
+        }
+
+        public Task<FingerprintCredentials> GetFingerprintCredentialsAsync()
+        {
+            return _database.Table<FingerprintCredentials>().FirstOrDefaultAsync();
+        }
+
+        public Task<int> SaveFingerprintCredentialsAsync(string email, string password)
+        {
+            return _database.InsertOrReplaceAsync(new FingerprintCredentials { Email = email, Password = password });
+        }
+
+        public Task DeleteFingerprintCredentialsAsync()
+        {
+            return _database.DeleteAllAsync<FingerprintCredentials>();
         }
     }
 }

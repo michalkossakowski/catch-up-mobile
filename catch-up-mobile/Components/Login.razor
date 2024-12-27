@@ -50,6 +50,10 @@ else
 
                             <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
                         </EditForm>
+                    @if (isAuthenticated)
+                    {
+                        <button class="btn btn-primary btn-lg w-100 mt-4" @onclick="AuthenticateUser">Login with fingerprint</button>
+                    }
                 </div>
             </div>
         </div>
@@ -67,39 +71,109 @@ else
 
     private LoginModel loginModel = new();
     private string errorMessage;
-    private bool isLoading;
+    private bool isLoading = true;
     private string userCountry;
+    private List<CompanyCityDto> cities = new List<CompanyCityDto>();
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await DbContext.GetUserAsync();
+        isAuthenticated = user != null;
+        if (isAuthenticated)
+        {
+            await AuthenticateUser();
+        } else
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AuthenticateUser()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        var request = new AuthenticationRequestConfiguration
+        (
+            "Verify your identity",
+            "Please scan your fingerprint to access the app"
+        );
+        
+        var result = await CrossFingerprint.Current.AuthenticateAsync(request);
+
+        if (result.Authenticated)
+        {
+            if (await CheckLocationAccess())
+            {
+                isLoading = false;
+                return;
+            }
+            isLoading = false;
+            await OnLoginSuccessful.InvokeAsync();
+        }
+        else
+        {
+            isLoading = false;
+            errorMessage = "Finger auth failed";
+        }
+    }
 
     private async Task<bool> CheckLocationAccess()
     {
         try
-        {   
-            await FetchAndSaveCitiesFromApi();
-            await CompanyLocator.GetLocation(DbContext);
-            if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
-            {
-                errorMessage = "You must be within a company city radius to login.";
-                return false;
-            }
+        {
+            var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
 
-            return true;
+            var result = await companySetting.Content.ReadFromJsonAsync<CompanySettingsResponse>();
+            if (result.settings.settings.IsLocalizationRestricted)
+                {
+                    var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
+                    string json = await allCitiesResponse.Content.ReadAsStringAsync();
+                    List<CompanyCityDto> allCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+                    if (allCities != null && allCities.Any())
+                    {
+                        cities = allCities;
+                        List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                        foreach (CompanyCityDto city in cities)
+                        {
+                            if (!existingCities.Any(ec => ec.cityName == city.cityName))
+                            {
+                                await DbContext.AddCityAsync(city);
+                            }
+                        }
+                    }
+                    await CompanyLocator.GetLocation(DbContext);
+                    if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                    {
+                        errorMessage = "You are out of bounds of a company city";
+                        return true;
+                    }
+                }
+                return false;
         }
         catch (Exception ex)
         {
-            errorMessage = "Location verification failed.";
-            return false;
+            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+            if (existingCities != null)
+            {
+                await CompanyLocator.GetLocation(DbContext);
+                if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                {
+                    errorMessage = "You are offline and out of bounds of a company city";
+                    return true;
+                }
+                else
+                {   
+                    return false;
+                }
+            }
+            else
+            {
+                errorMessage = "You are offline. If its your first time connecting to the app, you need to be online!";
+                return false;
+            }
         }
-    }
-
-    private async Task<string> GetUserLocation()
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync("https://ipinfo.io/json");
-        if (response.IsSuccessStatusCode)
-        {
-            GeolocationResponse locationData = await response.Content.ReadFromJsonAsync<GeolocationResponse>();
-            return locationData?.Country;
-        }
-        return "Unknown";
     }
 
     private async Task HandleLogin()
@@ -109,7 +183,7 @@ else
 
         try
         {
-            if (!await CheckLocationAccess())
+            if (await CheckLocationAccess())
             {
                 return;
             }
@@ -136,7 +210,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            errorMessage = "Can't login in offline mode";
         }
         finally
         {
@@ -201,9 +275,24 @@ else
                     Email = userResponse.Email,
                     Position = userResponse.Position
                 });
-            await DbContext.DeleteFingerprintCredentialsAsync();
-            await DbContext.SaveFingerprintCredentialsAsync(userResponse.Email, loginModel.Password);
         }
+    }
+
+    private class CompanySettingsResponse
+    {
+        public string message { get; set; }
+        public SettingsData settings { get; set; }
+    }
+
+    private class SettingsData
+    {
+        public int id { get; set; }
+        public Settings settings { get; set; }
+    }
+
+    private class Settings
+    {
+        public bool IsLocalizationRestricted { get; set; }
     }
 
     private class TokenResponse

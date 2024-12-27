@@ -113,7 +113,7 @@
     private string responseMessage = string.Empty;
     private bool isCityListExpanded = false;
     private CompanyCityDto newCity = new CompanyCityDto();
-    private bool isConnectedToApi = false;
+    private bool isConnectedToApi = true;
     /*
     name  Latitude  Longitude Radius(Km)
     { "Warsaw", (52.2297, 21.0122, 15) },
@@ -144,6 +144,7 @@
             responseMessage = "Error during page initialization: " + ex.Message;
         }
     }
+
     private async Task FetchAndSaveCitiesFromApi()
     {
         try
@@ -184,6 +185,7 @@
             responseMessage = "Error fetching cities from API: " + ex.Message;
         }
     }
+
     private async Task GetCityList()
     {
         try

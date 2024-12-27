@@ -21,7 +21,6 @@ else
 {   
     @if (!isFingerprintAuthorized)
     {
-        <h1>test paluch!</h1>
         @errorMessage
     }
     else
@@ -82,45 +81,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await DbContext.GetUserAsync();
-        isAuthenticated = user != null;
-
-        if (!isAuthenticated)
-        {
-            isFingerprintAuthorized = true;
-        } 
-        else 
-        {
-            var availability = await CrossFingerprint.Current.IsAvailableAsync();
-
-            if (availability)
-            {
-                await AuthenticateUser();
-            }
-        }
-
-
+        isAuthenticated = false;
+        isFingerprintAuthorized = true;
         isLoading = false;
-    }
-
-    private async Task AuthenticateUser()
-    {
-        var request = new AuthenticationRequestConfiguration
-        (
-            "Verify your identity",
-            "Please scan your fingerprint to access the app"
-        );
-
-        var result = await CrossFingerprint.Current.AuthenticateAsync(request);
-
-        if (result.Authenticated)
-        {
-            isFingerprintAuthorized = true;
-        }
-        else
-        {
-            isAuthenticated = false;
-            isFingerprintAuthorized = true;
-        }
     }
 }

@@ -133,20 +133,5 @@ namespace catch_up_mobile.SQLite
                 return _database.InsertAsync(fontSize);
             }
         }
-
-        public Task<FingerprintCredentials> GetFingerprintCredentialsAsync()
-        {
-            return _database.Table<FingerprintCredentials>().FirstOrDefaultAsync();
-        }
-
-        public Task<int> SaveFingerprintCredentialsAsync(string email, string password)
-        {
-            return _database.InsertOrReplaceAsync(new FingerprintCredentials { Email = email, Password = password });
-        }
-
-        public Task DeleteFingerprintCredentialsAsync()
-        {
-            return _database.DeleteAllAsync<FingerprintCredentials>();
-        }
     }
 }

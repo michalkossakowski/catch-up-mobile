@@ -79,7 +79,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         var user = await DbContext.GetUserAsync();
-        isAuthenticated = user != null;
+        var available = await CrossFingerprint.Current.IsAvailableAsync();
+        isAuthenticated = user != null && available;
         if (isAuthenticated)
         {
             await AuthenticateUser();

@@ -1,0 +1,309 @@
+﻿@page "/login"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject CatchUpLocalDb DbContext
+@inject IBiometricAuthService BiometricAuth
+
+@using System.Text.Json
+@using System.IdentityModel.Tokens.Jwt
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@using Microsoft.Maui.Devices.Sensors
+@using CommunityToolkit.Maui.Alerts
+@using Plugin.Fingerprint
+@using Plugin.Fingerprint.Abstractions
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
+        <p>Logging in...</p>
+    </div>
+}
+else
+{
+    <div class="vh-100 align-items-center justify-content-center">
+        <div class="w-100">
+            <div class="card border-0">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-4">Login</h3>
+                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+
+                        <div class="form-group">
+                            <label class="form-label">Email:</label>
+                            <InputText @bind-Value="loginModel.Email" class="form-control form-control-lg" />
+                            <ValidationMessage For="@(() => loginModel.Email)" />
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label class="form-label">Password:</label>
+                            <InputText type="password" @bind-Value="loginModel.Password" class="form-control form-control-lg" />
+                            <ValidationMessage For="@(() => loginModel.Password)" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger mt-4">@errorMessage</div>
+                        }
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Login</button>
+                        </EditForm>
+                    @if (isAuthenticated)
+                    {
+                        <button class="btn btn-primary btn-lg w-100 mt-4" @onclick="AuthenticateUser">Login with fingerprint</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback OnLoginSuccessful {get; set; }
+    private class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    private LoginModel loginModel = new();
+    private string errorMessage;
+    private bool isLoading = true;
+    private string userCountry;
+    private List<CompanyCityDto> cities = new List<CompanyCityDto>();
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await DbContext.GetUserAsync();
+        var available = await CrossFingerprint.Current.IsAvailableAsync();
+        isAuthenticated = user != null && available;
+        if (isAuthenticated)
+        {
+            await AuthenticateUser();
+        } else
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AuthenticateUser()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        var request = new AuthenticationRequestConfiguration
+        (
+            "Verify your identity",
+            "Please scan your fingerprint to access the app"
+        );
+        
+        var result = await CrossFingerprint.Current.AuthenticateAsync(request);
+
+        if (result.Authenticated)
+        {
+            if (await CheckLocationAccess())
+            {
+                isLoading = false;
+                return;
+            }
+            isLoading = false;
+            await OnLoginSuccessful.InvokeAsync();
+        }
+        else
+        {
+            isLoading = false;
+            errorMessage = "Finger auth failed";
+        }
+    }
+
+    private async Task<bool> CheckLocationAccess()
+    {
+        try
+        {
+            var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
+
+            var result = await companySetting.Content.ReadFromJsonAsync<CompanySettingsResponse>();
+            if (result.settings.settings.IsLocalizationRestricted)
+                {
+                    var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
+                    string json = await allCitiesResponse.Content.ReadAsStringAsync();
+                    List<CompanyCityDto> allCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+                    if (allCities != null && allCities.Any())
+                    {
+                        cities = allCities;
+                        List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                        foreach (CompanyCityDto city in cities)
+                        {
+                            if (!existingCities.Any(ec => ec.cityName == city.cityName))
+                            {
+                                await DbContext.AddCityAsync(city);
+                            }
+                        }
+                    }
+                    await CompanyLocator.GetLocation(DbContext);
+                    if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                    {
+                        errorMessage = "You are out of bounds of a company city";
+                        return true;
+                    }
+                }
+                return false;
+        }
+        catch (Exception ex)
+        {
+            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+            if (existingCities != null)
+            {
+                await CompanyLocator.GetLocation(DbContext);
+                if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                {
+                    errorMessage = "You are offline and out of bounds of a company city";
+                    return true;
+                }
+                else
+                {   
+                    return false;
+                }
+            }
+            else
+            {
+                errorMessage = "You are offline. If its your first time connecting to the app, you need to be online!";
+                return false;
+            }
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            if (await CheckLocationAccess())
+            {
+                return;
+            }
+
+            var response = await _httpClient.PostAsJsonAsync("api/Auth/Login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var tokens = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                if (tokens != null)
+                {
+                    await SaveUserAsync(tokens.RefreshToken);
+                    await OnLoginSuccessful.InvokeAsync();
+                }
+                else
+                {
+                    errorMessage = "Invalid response from server";
+                }
+            }
+            else
+            {
+                errorMessage = "Invalid login credentials";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Can't login in offline mode";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task FetchAndSaveCitiesFromApi()
+    {
+        try
+        {
+            string apiEndpoint = "api/CompanyCity/GetAllCities";
+            HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint);
+
+            if (!response.IsSuccessStatusCode)
+            {;
+                errorMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
+                return;
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            List<CompanyCityDto> apiCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+
+            if (apiCities == null || !apiCities.Any())
+            {
+                errorMessage = "No cities received from API.";
+                return;
+            }
+
+            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+
+            foreach (CompanyCityDto city in apiCities)
+            {
+                if (!existingCities.Any(c => c.cityName.Equals(city.cityName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    await DbContext.AddCityAsync(city);
+                }
+            }
+
+            errorMessage = $"Successfully fetched and saved {apiCities.Count} cities from API.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error fetching cities from API: " + ex.Message;
+        }
+    }
+
+    private async Task SaveUserAsync(string refreshToken)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(refreshToken);
+        var userId = token.Claims.First(c => c.Type == "nameid").Value;
+
+        var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
+        if (userResponse != null)
+        {
+            await DbContext.SaveUserAsync(new UserDto
+                {
+                    Id = userResponse.Id,
+                    Name = userResponse.Name,
+                    Surname = userResponse.Surname,
+                    Email = userResponse.Email,
+                    Position = userResponse.Position
+                });
+        }
+    }
+
+    private class CompanySettingsResponse
+    {
+        public string message { get; set; }
+        public SettingsData settings { get; set; }
+    }
+
+    private class SettingsData
+    {
+        public int id { get; set; }
+        public Settings settings { get; set; }
+    }
+
+    private class Settings
+    {
+        public bool IsLocalizationRestricted { get; set; }
+    }
+
+    private class TokenResponse
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+    }
+
+    private class GeolocationResponse
+    {
+        public string Country { get; set; }
+    }
+}

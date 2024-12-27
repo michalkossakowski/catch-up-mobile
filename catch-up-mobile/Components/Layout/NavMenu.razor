@@ -107,6 +107,6 @@
     private async Task HandleLogout()
     {
         await DbContext.ClearUserAsync();
-        NavigationManager.NavigateTo("/login", true);
+        NavigationManager.NavigateTo("/", true);
     }
 }

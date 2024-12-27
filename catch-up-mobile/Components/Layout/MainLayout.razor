@@ -3,82 +3,86 @@
 @inject CatchUpLocalDb DbContext
 
 @using catch_up_mobile.SQLite
+@using System.Text.Json
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@using Microsoft.Maui.Devices.Sensors
+@using CommunityToolkit.Maui.Alerts
+@using Plugin.Fingerprint
+@using Plugin.Fingerprint.Abstractions
 
 @if (isLoading)
 {
-    <div class="text-center">
+    <div class="text-center m-5">
         <Loading />
     </div>
 }
 else
-{
-    @if (isAuthenticated)
+{   
+    @if (!isFingerprintAuthorized)
     {
-        <div class="page">
-            <div class="sidebar fixed-top" style="position:sticky; top: 0">
-                <NavMenu />
-            </div>
-
-            <main>
-                <article class="content px-4">
-                    @Body
-                </article>
-            </main>
-            <!-- Bottom Navigation Panel -->
-            <div class="bottom-panel fixed-bottom shadow">
-                <div class="d-flex justify-content-around align-items-center">
-                    <NavLink class="nav-link text-center flex-fill" href="tasks">
-                        <i class="bi bi-list-task fs-4"></i>
-                        <div>Tasks</div>
-                    </NavLink>
-                    <NavLink class="nav-link text-center flex-fill" href="schoolingList">
-                        <i class="bi bi-book fs-4"></i>
-                        <div>Schoolings</div>
-                    </NavLink>
-                    <NavLink class="nav-link text-center flex-fill" href="/" Match="NavLinkMatch.All">
-                        <i class="bi bi-house-door fs-4"></i>
-                        <div>Home</div>
-                    </NavLink>
-                    <NavLink class="nav-link text-center flex-fill" href="feedback">
-                        <i class="bi bi-pencil-square fs-4"></i>
-                        <div>Feedback</div>
-                    </NavLink>
-                    <NavLink class="nav-link text-center flex-fill" href="faq">
-                        <i class="bi bi-question-circle fs-4"></i>
-                        <div>FAQ</div>
-                    </NavLink>
-                </div>
-            </div>
-
-        </div>
+        @errorMessage
     }
     else
     {
-        @Body
+        @if (isAuthenticated)
+        {
+            <div class="page">
+                <div class="sidebar fixed-top" style="position:sticky; top: 0">
+                    <NavMenu />
+                </div>
+
+                <main>
+                    <article class="content px-4">
+                        @Body
+                    </article>
+                </main>
+                <!-- Bottom Navigation Panel -->
+                <div class="bottom-panel fixed-bottom shadow">
+                    <div class="d-flex justify-content-around align-items-center">
+                        <NavLink class="nav-link text-center flex-fill" href="tasks">
+                            <i class="bi bi-list-task fs-4"></i>
+                            <div>Tasks</div>
+                        </NavLink>
+                        <NavLink class="nav-link text-center flex-fill" href="schoolingList">
+                            <i class="bi bi-book fs-4"></i>
+                            <div>Schoolings</div>
+                        </NavLink>
+                        <NavLink class="nav-link text-center flex-fill" href="/" Match="NavLinkMatch.All">
+                            <i class="bi bi-house-door fs-4"></i>
+                            <div>Home</div>
+                        </NavLink>
+                        <NavLink class="nav-link text-center flex-fill" href="feedback">
+                            <i class="bi bi-pencil-square fs-4"></i>
+                            <div>Feedback</div>
+                        </NavLink>
+                        <NavLink class="nav-link text-center flex-fill" href="faq">
+                            <i class="bi bi-question-circle fs-4"></i>
+                            <div>FAQ</div>
+                        </NavLink>
+                    </div>
+                </div>
+
+            </div>
+        }
+        else
+        {
+            <Login OnLoginSuccessful="() => isAuthenticated = true" />
+        }
     }
 }
 
 
 @code {
+    private bool isFingerprintAuthorized = false;
     private bool isAuthenticated = false;
     private bool isLoading = true;
+    private string errorMessage;
+
     protected override async Task OnInitializedAsync()
     {
-        var user = await DbContext.GetUserAsync();
-        isAuthenticated = user != null;
-
-        if (!isAuthenticated && NavigationManager.Uri != NavigationManager.BaseUri + "login")
-        {
-            NavigationManager.NavigateTo("/login");
-        }
-
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        var user = await DbContext.GetUserAsync();
-        isAuthenticated = user != null;
-        StateHasChanged();
+        isAuthenticated = false;
+        isFingerprintAuthorized = true;
         isLoading = false;
     }
 }

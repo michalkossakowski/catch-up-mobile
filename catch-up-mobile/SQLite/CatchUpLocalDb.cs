@@ -15,6 +15,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FaqDto>().Wait();
             _database.CreateTableAsync<FeedbackDto>().Wait();
             _database.CreateTableAsync<CompanyCityDto>().Wait();
+            _database.CreateTableAsync<FingerprintCredentials>().Wait();
             _database.CreateTableAsync<UserDto>().Wait();
             _database.CreateTableAsync<FontSizeDto>().Wait();
         }

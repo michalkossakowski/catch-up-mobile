@@ -3,6 +3,22 @@
 
 <h3 class="mb-4">Newbies List</h3>
 
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">
+                <i class="bi bi-search"></i>
+            </span>
+            <input type="text"
+                   class="form-control"
+                   placeholder="Search newbies..."
+                   @bind="searchTerm"
+                   @bind:event="oninput"
+                   @onkeyup="HandleSearch" />
+        </div>
+    </div>
+</div>
+
 @if (isOffline)
 {
     <div class="alert alert-warning" role="alert">
@@ -16,16 +32,22 @@ else if (isLoading)
         <Loading />
     </div>
 }
-else if (!newbies.Any())
+else if (newbies == null)
+{
+    <div class="alert alert-danger" role="alert">
+        Unable to load newbies data. Please try again later.
+    </div>
+}
+else if (!filteredNewbies.Any())
 {
     <div class="alert alert-info" role="alert">
-        No newbies found.
+        No newbies found matching your search.
     </div>
 }
 else
 {
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        @foreach (var newbie in newbies)
+        @foreach (var newbie in filteredNewbies)
         {
             <div class="col">
                 <div class="card h-100">
@@ -43,8 +65,10 @@ else
 
 @code {
     private List<Newbie> newbies;
+    private List<Newbie> filteredNewbies = new();
     private bool isLoading = true;
     private bool isOffline = false;
+    private string searchTerm = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,6 +79,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 newbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+                filteredNewbies = newbies;
                 isOffline = false;
             }
             else
@@ -74,6 +99,22 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private void HandleSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredNewbies = newbies;
+            return;
+        }
+
+        filteredNewbies = newbies
+            .Where(n =>
+                n.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                n.Surname.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                n.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private class Newbie

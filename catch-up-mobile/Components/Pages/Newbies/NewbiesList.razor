@@ -1,0 +1,84 @@
+﻿@page "/newbies"
+@inject HttpClient _httpClient
+
+<h3 class="mb-4">Newbies List</h3>
+
+@if (isOffline)
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-wifi-off me-2"></i>
+        You are currently offline.
+    </div>
+}
+else if (isLoading)
+{
+    <Loading />
+}
+else if (!newbies.Any())
+{
+    <div class="alert alert-info" role="alert">
+        No newbies found.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var newbie in newbies)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@newbie.Name @newbie.Surname</h5>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-envelope"></i> @newbie.Email
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Newbie> newbies;
+    private bool isLoading = true;
+    private bool isOffline = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllNewbies");
+            if (response.IsSuccessStatusCode)
+            {
+                newbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+                isOffline = false;
+            }
+            else
+            {
+                newbies = null;
+            }
+        }
+        catch (HttpRequestException)
+        {
+            isOffline = true;
+        }
+        catch (Exception ex)
+        {
+            newbies = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class Newbie
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Email { get; set; }
+    }
+}

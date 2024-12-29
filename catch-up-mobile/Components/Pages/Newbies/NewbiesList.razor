@@ -4,17 +4,36 @@
 <h3 class="mb-4">Newbies List</h3>
 
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="input-group">
-            <span class="input-group-text">
-                <i class="bi bi-search"></i>
-            </span>
-            <input type="text"
-                   class="form-control"
-                   placeholder="Search newbies..."
-                   @bind="searchTerm"
-                   @bind:event="oninput"
-                   @onkeyup="HandleSearch" />
+    <div class="col-12">
+        <div class="d-flex gap-3">
+            <div class="flex-grow-1">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Search newbies..."
+                           @bind="searchTerm"
+                           @bind:event="oninput"
+                           @onkeyup="HandleSearch" />
+                </div>
+            </div>
+            <div style="width: 40%">
+                <select class="form-select"
+                        @bind="selectedMentorId"
+                        @bind:event="onchange"
+                        @bind:after="HandleSearch">
+                    <option value="">All Mentors</option>
+                    @if (mentors != null)
+                    {
+                        @foreach (var mentor in mentors)
+                        {
+                            <option value="@mentor.Id">@mentor.Name @mentor.Surname</option>
+                        }
+                    }
+                </select>
+            </div>
         </div>
     </div>
 </div>
@@ -56,6 +75,15 @@ else
                         <p class="card-text text-muted">
                             <i class="bi bi-envelope"></i> @newbie.Email
                         </p>
+                        @if (newbie.AssignedMentors?.Any() == true)
+                        {
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i> Mentors: 
+                                    @string.Join(", ", newbie.AssignedMentors.Select(m => $"{m.Name}"))
+                                </small>
+                            </p>
+                        }
                     </div>
                 </div>
             </div>
@@ -66,32 +94,27 @@ else
 @code {
     private List<Newbie> newbies;
     private List<Newbie> filteredNewbies = new();
+    private List<Mentor> mentors;
     private bool isLoading = true;
     private bool isOffline = false;
     private string searchTerm = "";
+    private string selectedMentorId = "";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             isLoading = true;
-            var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllNewbies");
-            if (response.IsSuccessStatusCode)
-            {
-                newbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
-                filteredNewbies = newbies;
-                isOffline = false;
-            }
-            else
-            {
-                newbies = null;
-            }
+            await LoadMentors();
+            await LoadNewbies();
+            await LoadMentorAssignments();
+            isOffline = false;
         }
         catch (HttpRequestException)
         {
             isOffline = true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             newbies = null;
         }
@@ -101,20 +124,67 @@ else
         }
     }
 
+    private async Task LoadMentors()
+    {
+        var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllMentors");
+        if (response.IsSuccessStatusCode)
+        {
+            mentors = await response.Content.ReadFromJsonAsync<List<Mentor>>();
+        }
+    }
+
+    private async Task LoadNewbies()
+    {
+        var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllNewbies");
+        if (response.IsSuccessStatusCode)
+        {
+            newbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+            filteredNewbies = newbies;
+        }
+    }
+
+    private async Task LoadMentorAssignments()
+    {
+        foreach (var mentor in mentors)
+        {
+            var response = await _httpClient.GetAsync($"api/NewbieMentor/GetAssignmentsByMentor/{mentor.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var assignedNewbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+                foreach (var newbie in assignedNewbies)
+                {
+                    var existingNewbie = newbies.FirstOrDefault(n => n.Id == newbie.Id);
+                    if (existingNewbie != null)
+                    {
+                        existingNewbie.AssignedMentors ??= new List<Mentor>();
+                        existingNewbie.AssignedMentors.Add(mentor);
+                    }
+                }
+            }
+        }
+    }
+
     private void HandleSearch()
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            filteredNewbies = newbies;
-            return;
-        }
-
         filteredNewbies = newbies
             .Where(n =>
-                n.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                n.Surname.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                n.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                (string.IsNullOrWhiteSpace(searchTerm) ||
+                    (n.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+                     n.Surname?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+                     n.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true)) &&
+                (string.IsNullOrWhiteSpace(selectedMentorId) ||
+                    n.AssignedMentors?.Any(m => m.Id == selectedMentorId) == true))
             .ToList();
+    }
+
+
+    // dtos needed for loading data from api
+    private class Mentor
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Email { get; set; }
     }
 
     private class Newbie
@@ -123,5 +193,6 @@ else
         public string Name { get; set; }
         public string Surname { get; set; }
         public string Email { get; set; }
+        public List<Mentor> AssignedMentors { get; set; }
     }
 }

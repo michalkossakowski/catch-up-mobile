@@ -3,6 +3,7 @@ using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
 using catch_up_mobile.SQLite;
+using Plugin.Fingerprint;
 
 namespace catch_up_mobile
 {
@@ -33,7 +34,7 @@ namespace catch_up_mobile
             {
                 ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
             };
-            builder.Services.AddScoped(sp => new HttpClient(httpClientHandler)
+            builder.Services.AddSingleton(sp => new HttpClient(httpClientHandler)
             {
                 BaseAddress = new Uri("https://localhost:7097/")
             });
@@ -47,8 +48,13 @@ namespace catch_up_mobile
             //SQL Lite
             builder.Services.AddSingleton<CatchUpLocalDb>(s => new CatchUpLocalDb(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
-            // ----------- Custom Section End -----------
+            // Biometric Auth
+            builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();
 
+            // ----------- Custom Section End -----------
+            #if ANDROID
+             CrossFingerprint.SetCurrentActivityResolver(() => Platform.CurrentActivity);
+            #endif
             return builder.Build();
         }
     }

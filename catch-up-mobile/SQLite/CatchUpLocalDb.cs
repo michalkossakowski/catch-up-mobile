@@ -13,10 +13,37 @@ namespace catch_up_mobile.SQLite
 
             // TABLES
             _database.CreateTableAsync<FaqDto>().Wait();
-
             _database.CreateTableAsync<FeedbackDto>().Wait();
+            _database.CreateTableAsync<CompanyCityDto>().Wait();
+            _database.CreateTableAsync<FingerprintCredentials>().Wait();
+            _database.CreateTableAsync<UserDto>().Wait();
+            _database.CreateTableAsync<FontSizeDto>().Wait();
+        }
+        // CompanyCities
+        public Task<List<CompanyCityDto>> GetCitiesAsync()
+        {
+            return _database.Table<CompanyCityDto>().ToListAsync();
         }
 
+        public Task<int> AddCityAsync(CompanyCityDto city)
+        {
+            return _database.InsertAsync(city);
+        }
+
+        public Task<int> UpdateCityAsync(CompanyCityDto city)
+        {
+            return _database.UpdateAsync(city);
+        }
+
+        public Task<int> DeleteCityAsync(CompanyCityDto city)
+        {
+            return _database.DeleteAsync(city);
+        }
+
+        public Task DeleteAllCitiesAsync()
+        {
+            return _database.DeleteAllAsync<CompanyCityDto>();
+        }
         // FAQ
         public Task<List<FaqDto>> GetFaqsAsync()
         {
@@ -68,6 +95,43 @@ namespace catch_up_mobile.SQLite
         {
             return _database.DeleteAllAsync<FeedbackDto>();
         }
+        
+        //Users
+        public Task<UserDto> GetUserAsync()
+        {
+            return _database.Table<UserDto>().FirstOrDefaultAsync();
+        }
 
+        public async Task<int> SaveUserAsync(UserDto user)
+        {
+            // we want only one user logged in so we clear all first
+            await _database.DeleteAllAsync<UserDto>();
+            return await _database.InsertAsync(user);
+        }
+
+        public Task ClearUserAsync()
+        {
+            return _database.DeleteAllAsync<UserDto>();
+        }
+
+        //Font Size
+        public Task<FontSizeDto> GetFontSizeAsync()
+        {
+            return _database.Table<FontSizeDto>().FirstOrDefaultAsync();
+        }
+
+        public Task<int> SaveFontSizeAsync(FontSizeDto fontSize)
+        {
+            var existingFontSize = _database.Table<FontSizeDto>().FirstOrDefaultAsync().Result;
+            if (existingFontSize != null)
+            {
+                existingFontSize.FontSize = fontSize.FontSize;
+                return _database.UpdateAsync(existingFontSize);
+            }
+            else
+            {
+                return _database.InsertAsync(fontSize);
+            }
+        }
     }
 }

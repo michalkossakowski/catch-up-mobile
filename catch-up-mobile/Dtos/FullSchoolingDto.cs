@@ -4,7 +4,7 @@
     {
         public SchoolingDto? Schooling {get; set;}
         public CategoryDto? Category { get; set; }
-        public List<SchoolingPartDto>? Parts { get; set; }
+        public List<SchoolingPartDto>? Parts { get; set; } = new List<SchoolingPartDto>();
 
         public FullSchoolingDto(SchoolingDto schooling, CategoryDto category, List<SchoolingPartDto> parts)
         {
@@ -12,5 +12,6 @@
             Category = category;
             Parts = parts;
         }
+        public FullSchoolingDto() {}
     }
 }

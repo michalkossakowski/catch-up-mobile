@@ -1,4 +1,82 @@
 ﻿@page "/"
+
+@inject IJSRuntime JS
+@using catch_up_mobile.SQLite
+@inject CatchUpLocalDb _localDb
+
 <div class="container text-center">
-    <h2>Welcome back John Lennon</h2>
+    <h2>Welcome in CatchUp Mobile App</h2>
 </div>
+
+<div>
+    <div class="container mt-4">
+        <div class="row">
+
+            <!-- Tasks Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/task-batman-image.jpg" class="card-img-top" alt="Tasks Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-list-task fs-4"></i> Tasks
+                        </h5>
+                        <p class="card-text">Manage and track your tasks.</p>
+                        <NavLink class="btn btn-primary" href="tasks">Go to Tasks</NavLink>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schoolings Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/schooling-batman-image.jpg" class="card-img-top" alt="Schoolings Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-book fs-4"></i> Schoolings
+                        </h5>
+                        <p class="card-text">Access your schooling list and details.</p>
+                        <NavLink class="btn btn-primary" href="schoolingList">Go to Schoolings</NavLink>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedbacks Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/feedback-batman-image.jpg" class="card-img-top" alt="Feedbacks Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-pencil-square fs-4"></i> Feedbacks
+                        </h5>
+                        <p class="card-text">Submit and view feedbacks.</p>
+                        <NavLink class="btn btn-primary" href="feedback">Go to Feedbacks</NavLink>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Card -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="images/faq-batman-image.jpg" class="card-img-top" alt="FAQ Image">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-question-circle fs-4"></i> FAQ
+                        </h5>
+                        <p class="card-text">Find answers to frequently asked questions.</p>
+                        <NavLink class="btn btn-primary" href="faq">Go to FAQ</NavLink>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var fontSize = await _localDb.GetFontSizeAsync();
+        if (fontSize != null)
+            await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
+    }
+}

@@ -7,7 +7,16 @@
     @if (taskContent == null)
     {
         <div class="text-center">
-            <Loading/>
+            @if (errorMessage != null)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+            else
+            {
+                <Loading/>
+            }
         </div>
     }
     else
@@ -49,6 +58,7 @@
     private TaskContentDto? taskContent;
     private CategoryDto? category;
     private MaterialDto? material;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {

@@ -7,11 +7,11 @@
 }
 
 .font-size-medium {
-    --font-size: 16px;
+    --font-size: 14px;
 }
 
 .font-size-large {
-    --font-size: 20px;
+    --font-size: 16px;
 }
 
 /* Every element that will be affected by changing the font size*/

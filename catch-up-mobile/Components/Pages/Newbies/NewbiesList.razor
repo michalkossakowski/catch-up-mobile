@@ -1,0 +1,198 @@
+﻿@page "/newbies"
+@inject HttpClient _httpClient
+
+<h3 class="mb-4">Newbies List</h3>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex gap-3">
+            <div class="flex-grow-1">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Search newbies..."
+                           @bind="searchTerm"
+                           @bind:event="oninput"
+                           @onkeyup="HandleSearch" />
+                </div>
+            </div>
+            <div style="width: 40%">
+                <select class="form-select"
+                        @bind="selectedMentorId"
+                        @bind:event="onchange"
+                        @bind:after="HandleSearch">
+                    <option value="">All Mentors</option>
+                    @if (mentors != null)
+                    {
+                        @foreach (var mentor in mentors)
+                        {
+                            <option value="@mentor.Id">@mentor.Name @mentor.Surname</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (isOffline)
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-wifi-off me-2"></i>
+        You are currently offline.
+    </div>
+}
+else if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+        <Loading />
+    </div>
+}
+else if (newbies == null)
+{
+    <div class="alert alert-danger" role="alert">
+        Unable to load newbies data. Please try again later.
+    </div>
+}
+else if (!filteredNewbies.Any())
+{
+    <div class="alert alert-info" role="alert">
+        No newbies found matching your search.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var newbie in filteredNewbies)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@newbie.Name @newbie.Surname</h5>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-envelope"></i> @newbie.Email
+                        </p>
+                        @if (newbie.AssignedMentors?.Any() == true)
+                        {
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i> Mentors: 
+                                    @string.Join(", ", newbie.AssignedMentors.Select(m => $"{m.Name}"))
+                                </small>
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Newbie> newbies;
+    private List<Newbie> filteredNewbies = new();
+    private List<Mentor> mentors;
+    private bool isLoading = true;
+    private bool isOffline = false;
+    private string searchTerm = "";
+    private string selectedMentorId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            await LoadMentors();
+            await LoadNewbies();
+            await LoadMentorAssignments();
+            isOffline = false;
+        }
+        catch (HttpRequestException)
+        {
+            isOffline = true;
+        }
+        catch (Exception)
+        {
+            newbies = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadMentors()
+    {
+        var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllMentors");
+        if (response.IsSuccessStatusCode)
+        {
+            mentors = await response.Content.ReadFromJsonAsync<List<Mentor>>();
+        }
+    }
+
+    private async Task LoadNewbies()
+    {
+        var response = await _httpClient.GetAsync("api/NewbieMentor/GetAllNewbies");
+        if (response.IsSuccessStatusCode)
+        {
+            newbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+            filteredNewbies = newbies;
+        }
+    }
+
+    private async Task LoadMentorAssignments()
+    {
+        foreach (var mentor in mentors)
+        {
+            var response = await _httpClient.GetAsync($"api/NewbieMentor/GetAssignmentsByMentor/{mentor.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var assignedNewbies = await response.Content.ReadFromJsonAsync<List<Newbie>>();
+                foreach (var newbie in assignedNewbies)
+                {
+                    var existingNewbie = newbies.FirstOrDefault(n => n.Id == newbie.Id);
+                    if (existingNewbie != null)
+                    {
+                        existingNewbie.AssignedMentors ??= new List<Mentor>();
+                        existingNewbie.AssignedMentors.Add(mentor);
+                    }
+                }
+            }
+        }
+    }
+
+    private void HandleSearch()
+    {
+        filteredNewbies = newbies
+            .Where(n =>
+                (string.IsNullOrWhiteSpace(searchTerm) ||
+                    (n.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+                     n.Surname?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+                     n.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true)) &&
+                (string.IsNullOrWhiteSpace(selectedMentorId) ||
+                    n.AssignedMentors?.Any(m => m.Id == selectedMentorId) == true))
+            .ToList();
+    }
+
+
+    // dtos needed for loading data from api
+    private class Mentor
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Email { get; set; }
+    }
+
+    private class Newbie
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Email { get; set; }
+        public List<Mentor> AssignedMentors { get; set; }
+    }
+}

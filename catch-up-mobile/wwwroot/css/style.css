@@ -37,5 +37,14 @@
     color: #edca62;
 }
 
+.material-item {
+    word-wrap: break-word;
+    overflow-wrap: break-word; 
+    word-break: break-all; 
+    white-space: normal; 
+    text-align: left;
+}
 
-
+.material-name{
+    max-width: 50vw;
+}

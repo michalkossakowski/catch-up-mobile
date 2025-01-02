@@ -18,6 +18,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FingerprintCredentials>().Wait();
             _database.CreateTableAsync<UserDto>().Wait();
             _database.CreateTableAsync<FontSizeDto>().Wait();
+            _database.CreateTableAsync<LocalizationSettingDto>().Wait();
         }
         // CompanyCities
         public Task<List<CompanyCityDto>> GetCitiesAsync()
@@ -95,7 +96,7 @@ namespace catch_up_mobile.SQLite
         {
             return _database.DeleteAllAsync<FeedbackDto>();
         }
-        
+
         //Users
         public Task<UserDto> GetUserAsync()
         {
@@ -132,6 +133,23 @@ namespace catch_up_mobile.SQLite
             {
                 return _database.InsertAsync(fontSize);
             }
+        }
+
+        public Task<LocalizationSettingDto> GetLocalizationSettingAsync()
+        {
+            return _database.Table<LocalizationSettingDto>().FirstOrDefaultAsync();
+        }
+
+        public async Task<int> SaveLocalizationSettingAsync(bool isLocalizationRestricted)
+        {
+            await _database.DeleteAllAsync<LocalizationSettingDto>();
+
+            var setting = new LocalizationSettingDto
+            {
+                IsRestricted = isLocalizationRestricted
+            };
+
+            return await _database.InsertAsync(setting);
         }
     }
 }

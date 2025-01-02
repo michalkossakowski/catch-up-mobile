@@ -135,6 +135,7 @@ namespace catch_up_mobile.SQLite
             }
         }
 
+        // LocalizationSetting
         public Task<LocalizationSettingDto> GetLocalizationSettingAsync()
         {
             return _database.Table<LocalizationSettingDto>().FirstOrDefaultAsync();

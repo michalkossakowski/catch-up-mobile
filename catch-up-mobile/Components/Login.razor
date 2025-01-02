@@ -100,7 +100,7 @@ else
             "Verify your identity",
             "Please scan your fingerprint to access the app"
         );
-        
+
         var result = await CrossFingerprint.Current.AuthenticateAsync(request);
 
         if (result.Authenticated)
@@ -127,23 +127,24 @@ else
             var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
 
             var result = await companySetting.Content.ReadFromJsonAsync<CompanySettingsResponse>();
+            await DbContext.SaveLocalizationSettingAsync(result.settings.settings.IsLocalizationRestricted);
             if (result.settings.settings.IsLocalizationRestricted)
+            { 
+                var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
+                string json = await allCitiesResponse.Content.ReadAsStringAsync();
+                List<CompanyCityDto> allCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
+                if (allCities != null && allCities.Any())
                 {
-                    var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
-                    string json = await allCitiesResponse.Content.ReadAsStringAsync();
-                    List<CompanyCityDto> allCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
-                    if (allCities != null && allCities.Any())
+                    cities = allCities;
+                    List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                    foreach (CompanyCityDto city in cities)
                     {
-                        cities = allCities;
-                        List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
-                        foreach (CompanyCityDto city in cities)
+                        if (!existingCities.Any(ec => ec.cityName == city.cityName))
                         {
-                            if (!existingCities.Any(ec => ec.cityName == city.cityName))
-                            {
-                                await DbContext.AddCityAsync(city);
-                            }
+                            await DbContext.AddCityAsync(city);
                         }
                     }
+
                     await CompanyLocator.GetLocation(DbContext);
                     if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
                     {
@@ -151,28 +152,50 @@ else
                         return true;
                     }
                 }
-                return false;
+                else
+                {
+                    errorMessage = "Localization is restricted, but there's not cities data. Please contact the admin!";
+                    return true;
+                }
+            }
+            return false;
         }
         catch (Exception ex)
         {
-            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
-            if (existingCities != null)
+            try
             {
-                await CompanyLocator.GetLocation(DbContext);
-                if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                LocalizationSettingDto isLocalizationRestricted = await DbContext.GetLocalizationSettingAsync();
+                if (isLocalizationRestricted.IsRestricted)
                 {
-                    errorMessage = "You are offline and out of bounds of a company city";
-                    return true;
+                    List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                    if (existingCities != null && existingCities.Count != 0)
+                    {
+                        await CompanyLocator.GetLocation(DbContext);
+                        if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
+                        {
+                            errorMessage = "You are offline and out of bounds of a company city";
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        errorMessage = "You are offline and localization is restricted, but there's no cities data, please try again when online!";
+                        return true;
+                    }
                 }
                 else
-                {   
+                {
                     return false;
                 }
             }
-            else
+            catch (Exception ex2)
             {
-                errorMessage = "You are offline. If its your first time connecting to the app, you need to be online!";
-                return false;
+                errorMessage = "You are offline. If it's your first time logging into the app, please try when online!";
+                return true;
             }
         }
     }
@@ -188,7 +211,6 @@ else
             {
                 return;
             }
-
             var response = await _httpClient.PostAsJsonAsync("api/Auth/Login", loginModel);
 
             if (response.IsSuccessStatusCode)

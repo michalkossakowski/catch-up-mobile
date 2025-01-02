@@ -35,7 +35,7 @@
 }
 
 .nav-items-box {
-    max-height: 36vh;
+    max-height: 70vh;
     overflow-y: scroll;
     position: absolute;
     background-color: #2b0098;

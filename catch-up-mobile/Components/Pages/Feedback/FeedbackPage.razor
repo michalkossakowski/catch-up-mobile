@@ -162,14 +162,15 @@
             if (responseUsers.IsSuccessStatusCode)
             {
                 users = await responseUsers.Content.ReadFromJsonAsync<List<UserDto>>();
-                await DbContext.DeleteAllUsersAsync();
-                foreach (var user in users)
-                    await DbContext.AddUserAsync(user);
+                await DbContext.ClearUserAsync();
             }
             else
             {
-                users = await DbContext.GetUsersAsync();
+                var currentUser = await DbContext.GetUserAsync();
+                users = currentUser != null ? new List<UserDto> { currentUser } : new List<UserDto>();
             }
+
+
 
 
             offlineMode = false;

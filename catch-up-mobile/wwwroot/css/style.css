@@ -15,7 +15,7 @@
 }
 
 /* Every element that will be affected by changing the font size*/
-.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p, b, .btn {
+.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p, b, .btn, ul, li, h2 {
     font-size: var(--font-size) !important;
 }
 

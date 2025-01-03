@@ -64,9 +64,9 @@
                                         <div class="m-2">
 
                                             <MaterialItem materialId=faq.MaterialId
-                                                            showRemoveFile="false"
-                                                            showDownloadFile="true"
-                                                            showAddingFile="false" />
+                                            showRemoveFile="false"
+                                            showDownloadFile="true"
+                                            showAddingFile="false" />
                                         </div>
                                     }
                                     else
@@ -85,7 +85,7 @@
                                     </div>
                                 }
 
-                                @if (!offlineMode)
+                                @if (!isAdmin && !offlineMode)
                                 {
                                     <div class="d-flex mt-3 mb-3 btn-group ">
                                         <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
@@ -93,9 +93,13 @@
                                 }
                                 else
                                 {
-                                    <div class="alert alert-warning text-center" role="alert">
+                                    @if (!isAdmin)
+                                    {
+                                        <div class="alert alert-warning text-center" role="alert">
                                         <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
-                                    </div>
+                                        </div>
+                                    }
+                                    
                                 }
                             </div>
                         </div>

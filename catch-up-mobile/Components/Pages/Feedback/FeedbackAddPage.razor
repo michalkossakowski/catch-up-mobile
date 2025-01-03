@@ -1,11 +1,13 @@
 ﻿@page "/feedback/add"
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
+@inject CatchUpLocalDb DbContext
 
 @using System.Text.Json
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Enums
 @using CommunityToolkit.Maui.Alerts
+@using catch_up_mobile.SQLite
 
 <h3>Add Feedback</h3>
 <div class="container">
@@ -24,13 +26,8 @@
 </div>
 
 @code {
-    private FeedbackDto feedback = new FeedbackDto
-    {
-        SenderId = Guid.Parse("ce7dcde6-c9ac-4874-7b48-08dd11616e81"), // Place a static user here until Krzys creates users
-        ReceiverId = Guid.Parse("11b48e3d-06e6-4def-dd96-08dd1c8e928c"), // Exactly like above
-        ResourceType = ResourceTypeEnum.Faq,
-        createdDate = DateTime.Now
-    };
+    private Guid userId;
+    private FeedbackDto feedback = new FeedbackDto();
 
     private string errorMessage;
     [Parameter]
@@ -43,13 +40,17 @@
 
     private ResourceTypeEnum _resourceType;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         try
         {
-
-            feedback.ResourceId = ResourceId;
+            UserDto user = await DbContext.GetUserAsync();
+            userId = user.Id;
+            feedback.SenderId = userId;
+            feedback.ReceiverId = Guid.Parse("311083ec-a774-42ff-cf6d-08dd26a29cbe");
             feedback.ResourceType = (ResourceTypeEnum)ResourceTypeValue;
+            feedback.ResourceId = ResourceId;
+            feedback.createdDate = DateTime.Now;
 
         }
         catch (Exception ex)

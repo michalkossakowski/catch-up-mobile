@@ -1,7 +1,7 @@
 ﻿@page "/feedback"
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb _localDb
+@inject CatchUpLocalDb DbContext
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.Dtos
@@ -10,7 +10,7 @@
 @using CommunityToolkit.Maui.Alerts
 
 <div class="container text-center">
-    <h3>FeedbackPage</h3>
+    <h3>Feedbacks</h3>
     @if (feedbacks == null)
     {
         <Loading />
@@ -27,8 +27,8 @@
         <div class="accordion text-start mt-3 mb-3" id="accordionExample">
             @if (feedbacks.Count() == 0)
             {
-                <div class="alert alert-warning" role="alert">
-                    No Feedbacks found
+                <div class="alert alert-secondary text-center" role="alert">
+                    No feedbacks found
                 </div>
             }
             @for (int i = 0; i < feedbacks.Count; i++)
@@ -36,7 +36,6 @@
                 var feedback = feedbacks[i];
                 var collapseId = $"collapse{i}";
                 var headingId = $"heading{i}";
-
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="@headingId">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
@@ -45,28 +44,28 @@
                     </h2>
                     <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
                         <div class="accordion-body">
-                                @if (isAdmin)
-                                {
+                            @if (isAdmin)
+                            {
                                 <strong>Sender:</strong>
                                 <ul><li>@GetUserFullName(feedback.SenderId)</li></ul>
 
-                                }
-                                else
-                                {
-                                    <strong>Receiver:</strong>
-                                    <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
-                                }
-                                <strong>Description:</strong>
-                                <ul><li>@feedback.Description</li></ul>
+                            }
+                            else
+                            {
+                                <strong>Receiver:</strong>
+                                <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
+                            }
+                            <strong>Description:</strong>
+                            <ul><li>@feedback.Description</li></ul>
 
-                                <strong>Date:</strong>
-                                <ul><li>@feedback.createdDate.ToString("dd MMM yyyy")</li></ul>
+                            <strong>Date:</strong>
+                            <ul><li>@feedback.createdDate.ToString("dd MMM yyyy")</li></ul>
 
-                                <strong>Resource type:</strong>
-                                <ul><li>@feedback.ResourceType</li></ul>
+                            <strong>Resource type:</strong>
+                            <ul><li>@feedback.ResourceType</li></ul>
 
-                                <strong>Resource title:</strong>
-                                <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
+                            <strong>Resource title:</strong>
+                            <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
                             @if (isAdmin && !offlineMode)
                             {
                                 <div>
@@ -96,7 +95,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" @onclick="ConfirmDeleteFaq">Delete</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" @onclick="ConfirmDeleteFeedback">Delete</button>
             </div>
         </div>
     </div>
@@ -106,30 +105,78 @@
     private List<FeedbackDto> feedbacks;
     private FeedbackDto feedbackToDelete;
     private bool offlineMode = true;
-    private bool isAdmin = true;
+    private bool isAdmin = false;
     private List<FaqDto> faqs;
     private List<UserDto> users;
+    public Guid userId;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            feedbacks = await _httpClient.GetFromJsonAsync<List<FeedbackDto>>("api/feedback/GetAll");
+            UserDto user = await DbContext.GetUserAsync();
+            userId = user.Id;
+            var userRoleResonse = await _httpClient.GetAsync($"api/User/GetRole/{userId}");
+            isAdmin = await userRoleResonse.Content.ReadAsStringAsync() == "Admin";
 
-            faqs = await _httpClient.GetFromJsonAsync<List<FaqDto>>("api/faq/GetAll");
+            HttpResponseMessage responseFeedbacks;
 
-            users = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/user/GetAll");
+            if (isAdmin)
+            {
+                responseFeedbacks = await _httpClient.GetAsync($"api/feedback/GetByReceiverId/{userId}", HttpCompletionOption.ResponseHeadersRead);
+            }
+            else
+            {
+                responseFeedbacks = await _httpClient.GetAsync($"api/feedback/GetBySenderId/{userId}", HttpCompletionOption.ResponseHeadersRead);
+            }
 
-            await _localDb.DeleteAllFeedbacksAsync();
-            foreach (var feedback in feedbacks)
-                await _localDb.AddFeedbackAsync(feedback);
+            if (responseFeedbacks.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                feedbacks = new List<FeedbackDto>();
+            }
+            else if (responseFeedbacks.IsSuccessStatusCode)
+            {
+                feedbacks = await responseFeedbacks.Content.ReadFromJsonAsync<List<FeedbackDto>>();
+                await DbContext.DeleteAllFeedbacksAsync();
+
+                foreach (var feedback in feedbacks)
+                    await DbContext.AddFeedbackAsync(feedback);
+            }
+
+            HttpResponseMessage responseFaqs = await _httpClient.GetAsync("api/faq/GetAll", HttpCompletionOption.ResponseHeadersRead);
+
+            if (responseFaqs.IsSuccessStatusCode)
+            {
+                faqs = await responseFaqs.Content.ReadFromJsonAsync<List<FaqDto>>();
+                await DbContext.DeleteAllFaqsAsync();
+                foreach (var faq in faqs)
+                    await DbContext.AddFaqAsync(faq);
+            }
+            else
+            {
+                faqs = await DbContext.GetFaqsAsync();
+            }
+
+            HttpResponseMessage responseUsers = await _httpClient.GetAsync("api/user/GetAll", HttpCompletionOption.ResponseHeadersRead);
+
+            if (responseUsers.IsSuccessStatusCode)
+            {
+                users = await responseUsers.Content.ReadFromJsonAsync<List<UserDto>>();
+                await DbContext.DeleteAllUsersAsync();
+                foreach (var user in users)
+                    await DbContext.AddUserAsync(user);
+            }
+            else
+            {
+                users = await DbContext.GetUsersAsync();
+            }
+
 
             offlineMode = false;
         }
-        catch (Exception)
+        catch (HttpRequestException)
         {
-            feedbacks = await _localDb.GetFeedbacksAsync();
-            faqs = await _localDb.GetFaqsAsync();
+            feedbacks = await DbContext.GetFeedbacksAsync();
             offlineMode = true;
         }
     }
@@ -151,12 +198,12 @@
         return "No title";
     }
 
-    private async Task ConfirmDeleteFaq()
+    private async Task ConfirmDeleteFeedback()
     {
         if (feedbackToDelete != null)
         {
             await _httpClient.DeleteAsync($"api/feedback/delete/{feedbackToDelete.Id}");
-            await _localDb.DeleteFeedbackAsync(feedbackToDelete);
+            await DbContext.DeleteFeedbackAsync(feedbackToDelete);
             feedbacks.Remove(feedbackToDelete);
             feedbackToDelete = null;
             await Toast.Make("Feedback successfully deleted").Show();

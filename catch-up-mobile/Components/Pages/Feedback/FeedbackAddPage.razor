@@ -82,7 +82,18 @@
             if (response.IsSuccessStatusCode)
             {
                 await Toast.Make($"Feedback successfully added").Show();
-                NavigationManager.NavigateTo("/faq");
+                if (ResourceTypeValue == (int)ResourceTypeEnum.Faq)
+                {
+                    NavigationManager.NavigateTo("/faq");
+                }
+                else if (ResourceTypeValue == (int)ResourceTypeEnum.Schooling)
+                {
+                    NavigationManager.NavigateTo("/schoolingList");
+                }
+                else if (ResourceTypeValue == (int)ResourceTypeEnum.Task)
+                {
+                    NavigationManager.NavigateTo("/tasks");
+                }
             }
             else
             {
@@ -99,6 +110,17 @@
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/faq");
+        if (ResourceTypeValue == (int)ResourceTypeEnum.Faq)
+        {
+            NavigationManager.NavigateTo("/faq");
+        }
+        else if (ResourceTypeValue == (int)ResourceTypeEnum.Schooling)
+        {
+            NavigationManager.NavigateTo("/schoolingList");
+        }
+        else if (ResourceTypeValue == (int)ResourceTypeEnum.Task)
+        {
+            NavigationManager.NavigateTo("/tasks");
+        }
     }
 }

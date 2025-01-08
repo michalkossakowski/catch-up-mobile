@@ -107,6 +107,8 @@
     private bool offlineMode = true;
     private bool isAdmin = false;
     private List<FaqDto> faqs;
+    private List<FullSchoolingDto> schoolingsFull;
+    private List<FullTask> tasks;
     private List<UserDto> users;
     public Guid userId;
 
@@ -157,6 +159,20 @@
                 faqs = await DbContext.GetFaqsAsync();
             }
 
+            HttpResponseMessage responseSchoolings = await _httpClient.GetAsync("api/schooling/GetAllFull", HttpCompletionOption.ResponseHeadersRead);
+
+            if (responseSchoolings.IsSuccessStatusCode)
+            {
+                schoolingsFull = await responseSchoolings.Content.ReadFromJsonAsync<List<FullSchoolingDto>>();
+            }
+
+            HttpResponseMessage responseTasks = await _httpClient.GetAsync("api/task/GetAllFullTasks", HttpCompletionOption.ResponseHeadersRead);
+
+            if (responseTasks.IsSuccessStatusCode)
+            {
+                tasks = await responseTasks.Content.ReadFromJsonAsync<List<FullTask>>();
+            }
+
             HttpResponseMessage responseUsers = await _httpClient.GetAsync("api/user/GetAll", HttpCompletionOption.ResponseHeadersRead);
 
             if (responseUsers.IsSuccessStatusCode)
@@ -169,9 +185,6 @@
                 var currentUser = await DbContext.GetUserAsync();
                 users = currentUser != null ? new List<UserDto> { currentUser } : new List<UserDto>();
             }
-
-
-
 
             offlineMode = false;
         }
@@ -194,6 +207,17 @@
         {
             var faq = faqs?.FirstOrDefault(f => f.Id == resourceId);
             return faq?.Question ?? "No title";
+        }
+        else if (resourceType == ResourceTypeEnum.Schooling){
+            var schooling = schoolingsFull?
+                .Select(f => f.Schooling)
+                .FirstOrDefault(s => s.Id == resourceId);
+            return schooling?.Title ?? "No title";
+        }
+        else if (resourceType == ResourceTypeEnum.Task)
+        {
+            var task = tasks?.FirstOrDefault(f => f.Id == resourceId);
+            return task?.Title ?? "No title";
         }
 
         return "No title";

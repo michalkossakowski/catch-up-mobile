@@ -1,8 +1,11 @@
 ﻿@page "/tasks"
 
 @inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+
 
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.Enums
 <h3>Tasks</h3>
 
 <div class="accordion" id="accordionExample">
@@ -12,6 +15,9 @@
             <div class="card-body">
                 <h5 class="card-title">@card.FullTask.Title</h5>
                 <p class="card-text">@card.Name</p>
+                    <div class="d-flex mt-3 mb-3 btn-group ">
+                        <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(card.FullTask.Id)">Feedback</button>
+                    </div>
             </div>
         </div>
     }
@@ -45,5 +51,17 @@
     {
         public FullTask FullTask;
         public string Name;
+    }
+    private void NavigateToFeedback(int taskId)
+    {
+        try
+        {
+            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Task}&resourceId={taskId}";
+            NavigationManager.NavigateTo(url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        }
     }
 }

@@ -54,10 +54,10 @@
                     {
                         <tr style="cursor: pointer"
                             class="mentor-row @(mentor.Id == selectedNewbieId ? "table-active" : "")">
-                            <td>@mentor.Name</td>
-                            <td>@mentor.Surname</td>
-                            <td>@mentor.Position</td>
-                            <td>
+                            <td style="white-space: normal; word-wrap: break-word;">@mentor.Name</td>
+                            <td style="white-space: normal; word-wrap: break-word;">@mentor.Surname</td>
+                            <td style="white-space: normal; word-wrap: break-word;">@mentor.Position</td>
+                            <td style="white-space: normal; word-wrap: break-word;">
                                 <button class="btn btn-primary" @onclick="() => AssignMentor(mentor.Id)">
                                     Assign
                                 </button>

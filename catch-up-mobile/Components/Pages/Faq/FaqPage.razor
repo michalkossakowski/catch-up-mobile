@@ -85,7 +85,7 @@
                                     </div>
                                 }
 
-                                @if (!isAdmin && !offlineMode)
+                                @if (!offlineMode)
                                 {
                                     <div class="d-flex mt-3 mb-3 btn-group ">
                                         <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
@@ -93,13 +93,9 @@
                                 }
                                 else
                                 {
-                                    @if (!isAdmin)
-                                    {
-                                        <div class="alert alert-warning text-center" role="alert">
-                                        <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
-                                        </div>
-                                    }
-                                    
+                                    <div class="alert alert-warning text-center" role="alert">
+                                    <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
+                                    </div>
                                 }
                             </div>
                         </div>

@@ -3,6 +3,7 @@
 
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
+@using catch_up_mobile.Enums
 
 @inject HttpClient _httpClient
 @inject CatchUpLocalDb _localDb
@@ -66,6 +67,9 @@
                                     <button type="button" class="btn btn-warning text-white" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
                                 }
+                            </div>
+                            <div class="d-flex mt-3 mb-3 btn-group ">
+                                <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(schooling.Id)">Feedback</button>
                             </div>
                         </div>
                     </div>
@@ -203,5 +207,18 @@
         selectedCategoryId = string.IsNullOrEmpty(selectedValue) ? null : int.Parse(selectedValue);
 
         FilterSchoolings();
+    }
+
+    private void NavigateToFeedback(int schoolingId)
+    {
+        try
+        {
+            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Schooling}&resourceId={schoolingId}";
+            NavigationManager.NavigateTo(url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        }
     }
 }

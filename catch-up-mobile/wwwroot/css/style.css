@@ -1,5 +1,5 @@
 :root {
-    --font-size: 16px;
+    --font-size: 14px;
 }
 
 .font-size-small {
@@ -7,15 +7,15 @@
 }
 
 .font-size-medium {
-    --font-size: 16px;
+    --font-size: 14px;
 }
 
 .font-size-large {
-    --font-size: 20px;
+    --font-size: 16px;
 }
 
 /* Every element that will be affected by changing the font size*/
-.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p, b, .btn {
+.nav-link, .navbar-brand, button, input, label, textarea, .accordion-body, p, b, .btn, ul, li, h2 {
     font-size: var(--font-size) !important;
 }
 
@@ -37,5 +37,14 @@
     color: #edca62;
 }
 
+.material-item {
+    word-wrap: break-word;
+    overflow-wrap: break-word; 
+    word-break: break-all; 
+    white-space: normal; 
+    text-align: left;
+}
 
-
+.material-name{
+    max-width: 45vw;
+}

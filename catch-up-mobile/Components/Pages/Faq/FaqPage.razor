@@ -64,9 +64,9 @@
                                         <div class="m-2">
 
                                             <MaterialItem materialId=faq.MaterialId
-                                                            showRemoveFile="false"
-                                                            showDownloadFile="true"
-                                                            showAddingFile="false" />
+                                            showRemoveFile="false"
+                                            showDownloadFile="true"
+                                            showAddingFile="false" />
                                         </div>
                                     }
                                     else
@@ -79,12 +79,22 @@
 
                                 @if (isAdmin && !offlineMode)
                                 {
+                                    <div class="d-flex mt-3 mb-3 btn-group">
+                                        <button type="button" class="btn btn-primary w-50" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
+                                        <button type="button" class="btn btn-danger w-50" @onclick="() => DeleteFaq(faq)">Delete</button>
+                                    </div>
+                                }
+
+                                @if (!offlineMode)
+                                {
                                     <div class="d-flex mt-3 mb-3 btn-group ">
-                                        <button type="button" class="btn btn-primary" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
-                                        <button type="button" class="btn btn-danger" @onclick="() => DeleteFaq(faq)">
-                                            Delete
-                                        </button>
                                         <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning text-center" role="alert">
+                                    <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
                                     </div>
                                 }
                             </div>
@@ -93,17 +103,20 @@
                 }
             </div>
         }
-        if (isAdmin && !offlineMode)
+        if (isAdmin)
         {
-            <div class="d-flex mt-3 mb-3 btn-group ">
-                <button type="button" class="btn btn-primary" @onclick="OpenFaqAdd">Add new FAQ</button>
-            </div>
-        }
-        else
-        {
-            <div class="alert alert-warning" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> You cannot add/edit/delete FAQ in offline mode
-            </div>
+            if (!offlineMode)
+            {
+                <div class="d-flex mt-3 mb-3 btn-group ">
+                    <button type="button" class="btn btn-primary" @onclick="OpenFaqAdd">Add new FAQ</button>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning text-center" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> You cannot add/edit/delete FAQ in offline mode
+                </div>
+            }
         }
     }
 </div>
@@ -112,13 +125,17 @@
     private List<FaqDto> faqs;
     private List<FaqDto> filteredFaqs;
     private bool offlineMode = true;
-    private bool isAdmin = true; // Waiting for ADMIN
+    private bool isAdmin = false; 
     private string searchQuery = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            UserDto user = await _localDb.GetUserAsync();
+            var userRoleResonse = await _httpClient.GetAsync($"api/User/GetRole/{user.Id}");
+            isAdmin = await userRoleResonse.Content.ReadAsStringAsync() == "Admin";
+
             var response = await _httpClient.GetAsync("api/faq/GetAll", HttpCompletionOption.ResponseHeadersRead);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)

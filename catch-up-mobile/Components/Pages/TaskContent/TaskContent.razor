@@ -3,8 +3,10 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
+@inject CatchUpLocalDb DbContext
 @using catch_up_mobile.Dtos
 @using Microsoft.Maui.Devices.Sensors
+@using catch_up_mobile.SQLite
 @implements IDisposable
 
 <h3>Task Content</h3>
@@ -117,7 +119,7 @@ else
     private DateTime lastShakeTime = DateTime.MinValue;
     private const double ShakeThreshold = 1.3;
     private const int ShakeCooldownMs = 1000;
-    private bool offlineMode = true;
+    private bool offlineMode = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -210,33 +212,31 @@ else
 
     private async Task HandleValidSubmit()
     {
-        if (!categories.Any(c => c.Id == newTaskContent.CategoryId))
+        try
         {
-            var newCategory = new CategoryDto { Name = "Nowa kategoria" };
-            var response = await Http.PostAsJsonAsync("api/Category/Add", newCategory);
-            if (response.IsSuccessStatusCode)
+            UserDto user = await DbContext.GetUserAsync();
+            newTaskContent.CreatorId = user.Id;
+
+            var result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);
+
+            if (result.IsSuccessStatusCode)
             {
-                var createdCategory = await response.Content.ReadFromJsonAsync<CategoryDto>();
-                newTaskContent.CategoryId = createdCategory.Id;
+                newTaskContent = new TaskContentDto();
+                await LoadTaskContents();
+            }
+            else
+            {
+                var errorMessage = await result.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Error: {result.StatusCode} - {errorMessage}");
+                
+                errorMessage = $"Operation failed: {result.StatusCode} - {errorMessage}";
+                await JSRuntime.InvokeVoidAsync("alert", errorMessage);
             }
         }
-
-        newTaskContent.CreatorId = Guid.Parse("4f3c4e57-ea63-4c44-3390-08dd19ed7954");
-
-        var result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);
-
-        if (result.IsSuccessStatusCode)
+        catch (Exception ex)
         {
-            newTaskContent = new TaskContentDto();
-            await LoadTaskContents();
-        }
-        else
-        {
-            var errorMessage = await result.Content.ReadAsStringAsync();
-            Console.Error.WriteLine($"Error: {result.StatusCode} - {errorMessage}");
-            
-            errorMessage = $"Operation failed: {result.StatusCode} - {errorMessage}";
-            await JSRuntime.InvokeVoidAsync("alert", errorMessage);
+            Console.Error.WriteLine($"Error in HandleValidSubmit: {ex}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to add task content");
         }
     }
 

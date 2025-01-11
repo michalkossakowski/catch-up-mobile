@@ -11,6 +11,7 @@ namespace catch_up_mobile.Dtos
     {
         public int Id { get; set; }
         public Guid? NewbieId { get; set; }
+        public Guid? AssigningId { get; set; }
         public int? MaterialsId { get; set; }
         public int? CategoryId { get; set; }
         public string Title { get; set; }
@@ -20,7 +21,7 @@ namespace catch_up_mobile.Dtos
         public DateTime AssignmentDate { get; set; }
         public DateTime? FinalizationDate { get; set; }
         public DateTime? Deadline { get; set; }
-        public int SpendTime { get; set; }
+        public double SpendTime { get; set; }
         public int Priority { get; set; }
         public int? Rate { get; set; }
     }

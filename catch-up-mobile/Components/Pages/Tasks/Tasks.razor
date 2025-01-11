@@ -1,20 +1,43 @@
 ﻿@page "/tasks"
 
 @inject HttpClient _httpClient
+@inject CatchUpLocalDb DbContext
 
+@using catch_up_mobile.SQLite
 @using catch_up_mobile.Dtos
 <h3>Tasks</h3>
 
-<div class="accordion" id="accordionExample">
-    @foreach (var card in cards)
+<div> 
+    @if (cards == null)
     {
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">@card.FullTask.Title</h5>
-                <p class="card-text">@card.Name</p>
-            </div>
+        <div class="text-center">
+            <Loading />
         </div>
     }
+    else
+    {
+        @if (cards.Count == 0)
+        {
+            <div class="alert alert-warning" role="alert">
+                No tasks found
+            </div>
+        }
+        else
+        {
+            @foreach (var card in cards)
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@card.FullTask.Title</h5>
+                        <p class="card-text">@card.Name</p>
+                    </div>
+                </div>
+            }
+        }
+
+        
+    }
+    
 </div>
 
 
@@ -24,7 +47,16 @@
     protected override async Task OnInitializedAsync()
     {
         cards = new List<Card>();
-        List<FullTask> fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
+        UserDto currentUser = await DbContext.GetUserAsync();
+        var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
+        string userRole = await response.Content.ReadAsStringAsync();
+        List<FullTask> fullTasks = new List<FullTask>();
+        if(userRole.ToLower() == "mentor")
+            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByAssigningId/{currentUser.Id}");
+        else if(userRole.ToLower() == "newbie")
+            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByNewbieId/{currentUser.Id}");
+        else if (userRole.ToLower() == "admin")
+            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
 
         foreach (var fullTask in fullTasks)
         {

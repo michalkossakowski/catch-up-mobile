@@ -1,66 +1,118 @@
 ﻿@page "/assigntask"
 
 @inject HttpClient _httpClient
+@inject CatchUpLocalDb DbContext
 
+@using catch_up_mobile.SQLite
 @using CommunityToolkit.Maui.Alerts
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Enums
 
 <h3>AssignTask</h3>
-<EditForm Model="@newTask" OnValidSubmit="@HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="mb-3">
-        <label for="newbie" class="form-label">Newbie</label>
-        <InputSelect id="newbie" class="form-control" @bind-Value="newTask.NewbieId">
-            <option value="">Select a newbie</option>
-            @foreach (var newbie in newbies)
-            {
-                <option value="@newbie.Id">@newbie.Name</option>
-            }
-        </InputSelect>
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
     </div>
-    <div class="mb-3">
-        <label for="taskcontent" class="form-label">Task Content</label>
-        <InputSelect id="taskcontent" class="form-control" @bind-Value="newTask.TaskContentId">
-            <option value="">Select a task content</option>
-            @foreach (var taskContent in taskContents)
-            {
-                <option value="@taskContent.Id">@taskContent.Title</option>
-            }
-        </InputSelect>
-    </div>
+}
+else
+{
+    if (isOnline)
+    {
+        if (newbies.Count != 0)
+        {
+            <EditForm Model="@newTask" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
-    <div class="mb-3">
-        <label for="title" class="form-label">Priority</label>
-        <InputNumber id="priority" class="form-control" @bind-Value="newTask.Priority" />
-    </div>
+                <div class="mb-3">
+                    <label for="newbie" class="form-label">Newbie</label>
+                    <InputSelect id="newbie" class="form-control" @bind-Value="newTask.NewbieId">
+                        <option value="">Select a newbie</option>
+                        @foreach (var newbie in newbies)
+                        {
+                            <option value="@newbie.Id">@newbie.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="mb-3">
+                    <label for="taskcontent" class="form-label">Task Content</label>
+                    <InputSelect id="taskcontent" class="form-control" @bind-Value="newTask.TaskContentId">
+                        <option value="">Select a task content</option>
+                        @foreach (var taskContent in taskContents)
+                        {
+                            <option value="@taskContent.Id">@taskContent.Title</option>
+                        }
+                    </InputSelect>
+                </div>
 
-    <div class="mb-3">
-        <label for="deadline" class="form-label">Deadline</label>
-        <InputDate id="deadline" class="form-control" @bind-Value="newTask.Deadline" />
-    </div>
-    <button type="submit" class="btn btn-primary">Assign</button>
+                <div class="mb-3">
+                    <label for="title" class="form-label">Priority</label>
+                    <InputNumber id="priority" class="form-control" @bind-Value="newTask.Priority" />
+                </div>
 
-</EditForm>
+                <div class="mb-3">
+                    <label for="deadline" class="form-label">Deadline</label>
+                    <InputDate id="deadline" class="form-control" @bind-Value="newTask.Deadline" />
+                </div>
+                <button type="submit" class="btn btn-primary">Assign</button>
+
+            </EditForm>
+        }
+        else
+        {
+            <div class="alert alert-primary" role="alert">
+                <i class="bi bi-info-circle"></i> You don't have any newbies
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-primary" role="alert">
+            <i class="bi bi-info-circle"></i> You can't assing tasks in offline mode
+        </div>
+    }
+}
+
+
+
 
 
 @code {
     private TaskDto newTask = new TaskDto();
     private List<UserDto> newbies = new List<UserDto>();
     private List<TaskContentDto> taskContents = new List<TaskContentDto>();
+    private bool isOnline = false;
+    private bool isLoading = true;
+   
 
     protected override async Task OnInitializedAsync()
     {
-        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllNewbies");
-        taskContents = await _httpClient.GetFromJsonAsync<List<TaskContentDto>>($"api/TaskContent/GetAll");
+        UserDto currentUser = await DbContext.GetUserAsync();
+        try
+        {
+            newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{currentUser.Id}");
+            taskContents = await _httpClient.GetFromJsonAsync<List<TaskContentDto>>($"api/TaskContent/GetAll");
+        }
+        catch (HttpRequestException ex)
+        {
+            isOnline = false;
+            isLoading = false;
+            return;
+        }
+
+        isOnline = true;
+
+        isLoading = false;
+        
     }
 
     private async Task HandleValidSubmit()
     {
+        UserDto currentUser = await DbContext.GetUserAsync();
         newTask.Status = StatusEnum.ToDo;
         newTask.AssignmentDate = DateTime.Now;
+        newTask.AssigningId = currentUser.Id;
 
         var result = await _httpClient.PostAsJsonAsync("api/Task/AddTaskToUser", newTask);
 
@@ -72,6 +124,7 @@
         else
         {
             Toast.Make($"Error while adding Task with status code: {result.StatusCode}").Show();
+            //if(result.StatusCode == )
         }
     }
 }

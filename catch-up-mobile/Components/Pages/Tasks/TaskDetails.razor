@@ -177,6 +177,11 @@ else
             <button type="button" class="btn btn-danger" @onclick="async() => await DeleteTask()">
                 Delete
             </button>
+            @if (fullTaskId.HasValue)
+            {
+                <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(fullTaskId.Value)">Feedback</button>
+            }
+            
         </div>
     }
 
@@ -331,7 +336,18 @@ else
         App.Current.MainPage.ShowPopup(popup);
         
     }
-
+    private void NavigateToFeedback(int taskId)
+    {
+        try
+        {
+            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Task}&resourceId={taskId}";
+            NavigationManager.NavigateTo(url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        }
+    }
 }
 <style>
     .card{

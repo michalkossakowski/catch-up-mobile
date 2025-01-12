@@ -19,7 +19,13 @@ else
 {
     if (isOnline)
     {
-        if (newbies.Count != 0)
+        if (!isValidUser)
+        {
+            <div class="alert alert-primary" role="alert">
+                <i class="bi bi-info-circle"></i> You don't have acces to this page
+            </div>
+        }
+        else if (newbies.Count != 0)
         {
             <EditForm Model="@newTask" OnValidSubmit="@HandleValidSubmit">
                 <DataAnnotationsValidator />
@@ -84,13 +90,18 @@ else
     private List<TaskContentDto> taskContents = new List<TaskContentDto>();
     private bool isOnline = false;
     private bool isLoading = true;
-   
+    private bool isValidUser = false;
+
 
     protected override async Task OnInitializedAsync()
     {
         UserDto currentUser = await DbContext.GetUserAsync();
         try
-        {
+        {   
+            var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
+            string userRole = await response.Content.ReadAsStringAsync();
+            if (userRole.ToLower() != "newbie")
+                isValidUser = true;
             newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{currentUser.Id}");
             taskContents = await _httpClient.GetFromJsonAsync<List<TaskContentDto>>($"api/TaskContent/GetAll");
         }
@@ -104,7 +115,7 @@ else
         isOnline = true;
 
         isLoading = false;
-        
+
     }
 
     private async Task HandleValidSubmit()
@@ -113,18 +124,25 @@ else
         newTask.Status = StatusEnum.ToDo;
         newTask.AssignmentDate = DateTime.Now;
         newTask.AssigningId = currentUser.Id;
-
-        var result = await _httpClient.PostAsJsonAsync("api/Task/AddTaskToUser", newTask);
-
-        if (result.IsSuccessStatusCode)
+        HttpResponseMessage result = new HttpResponseMessage();
+        try
         {
-            newTask = new TaskDto();
-            Toast.Make($"Task assigned").Show();
+            result = await _httpClient.PostAsJsonAsync("api/Task/AddTaskToUser", newTask);
+            if (result.IsSuccessStatusCode)
+            {
+                newTask = new TaskDto();
+                Toast.Make($"Task assigned").Show();
+            }
+            else
+            {
+                Toast.Make($"Error while adding Task with status code: {result.StatusCode}").Show();
+            }
         }
-        else
+        catch (HttpRequestException ex)
         {
-            Toast.Make($"Error while adding Task with status code: {result.StatusCode}").Show();
-            //if(result.StatusCode == )
+            isOnline = false;
+            return;
         }
+        
     }
 }

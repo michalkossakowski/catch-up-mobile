@@ -1,4 +1,5 @@
 ﻿using catch_up_mobile.Enums;
+using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +8,9 @@ using System.Threading.Tasks;
 
 namespace catch_up_mobile.Dtos
 {
-    internal class FullTask
+    public class FullTask
     {
+        [PrimaryKey]
         public int Id { get; set; }
         public Guid? NewbieId { get; set; }
         public Guid? AssigningId { get; set; }

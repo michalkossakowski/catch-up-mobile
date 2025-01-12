@@ -1,0 +1,294 @@
+﻿@page "/tasks/details/{fullTaskId:int?}"
+
+@inject HttpClient _httpClient
+@inject CatchUpLocalDb DbContext
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Components.Pages.MaterialManager
+@using System.ComponentModel.DataAnnotations;
+@using catch_up_mobile.SQLite
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.Enums
+@using CommunityToolkit.Maui.Alerts
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            @fullTask.Title
+        </div>
+        <div class="card-body">
+            
+            @if (currentUser.Id == fullTask.AssigningId)
+            {
+                <p class="card-text">Assigned by you to @newbieName</p>
+            }
+            else if (currentUser.Id == fullTask.NewbieId)
+            {
+                <p class="card-text">Assigned by @mentorName to you</p>
+            }else
+            {
+                <p class="card-text">Assigned by @mentorName to @newbieName;}</p>
+            }
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            Description:
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                @fullTask.Description
+            </p>
+        </div>
+    </div>
+    
+    
+    if (fullTask.MaterialsId != null)
+    {
+        <div class="card">
+            <div class="card-header">
+                Additional materials:
+            </div>
+            <div class="card-body">
+                <div class="m-2">
+                    <MaterialItem materialId=fullTask.MaterialsId
+                                  showRemoveFile="false"
+                                  showDownloadFile="true"
+                                  showAddingFile="false" />
+                </div>
+            </div>
+        </div>
+        
+        
+    }
+    <div class="card">
+        <div class="card-header">
+            Other details:
+        </div>
+        <div class="card-body">
+            <p class="card-text">Category: @(categories.FirstOrDefault(c => c.Id == fullTask.CategoryId)?.Name ?? "No category")</p>
+            <p class="card-text">Assignment Date: @fullTask.AssignmentDate.ToString("g")</p>
+            @if (fullTask.Deadline.HasValue)
+            {
+                <p class="card-text">Deadline Date: @fullTask.Deadline.Value.ToString("g")</p>
+            }
+            else
+            {
+                <p class="card-text">No deadline set.</p>
+            }
+            @if(fullTask.Status == StatusEnum.Done)
+            {
+                <p class="card-text">Finalization Date: @fullTask.FinalizationDate.Value.ToString("g")</p>
+            }
+            <p class="card-text">Priority: @fullTask.Priority</p>
+            <div class="container text-start">
+                <div class="row">
+                    <div class="col">
+                        <p>Spend Time: @fullTask.SpendTime</p>
+                    </div>
+                    @if(isOnline){
+                        <div class="col">
+                            <EditForm Model="spendTime" OnValidSubmit="AddTime">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+                                <div class="input-group mb-3">
+                                    <InputNumber class="form-control" placeholder="Material's name" @bind-Value="spendTime" />
+                                    <button class="btn btn-primary" type="submit">
+                                        Add Time
+                                    </button>
+                                </div>
+                            </EditForm>
+                            </div>
+                        }
+                </div>  
+            </div>
+            <div class="container text-start">
+                <div class="row">
+                    <div class="col">
+                        <p>Status: @(getStatus(fullTask.Status))</p>
+                    </div>
+                    @if (isOnline)
+                    {
+                        if (fullTask.Status == StatusEnum.ToDo)
+                        {
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="async() => await SetStatus(StatusEnum.InProgress)">
+                                    In progress
+                                </button>
+                            </div>
+                        }
+                        else if (fullTask.Status == StatusEnum.InProgress)
+                        {
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="async() => await SetStatus(StatusEnum.ToReview)">
+                                    To Review
+                                </button>
+                            </div>
+                        }
+                        else if (fullTask.Status == StatusEnum.ToReview && isMentor)
+                        {
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="async() => await SetStatus(StatusEnum.ReOpen)">
+                                    Reopen
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="async() => await SetStatus(StatusEnum.Done)">
+                                    Done
+                                </button>
+                            </div>
+                        }
+                        if (fullTask.Status == StatusEnum.ReOpen)
+                        {
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="async() => await SetStatus(StatusEnum.ToReview)">
+                                    To Review
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    
+    
+
+
+    if (!isOnline)
+    {
+        <div class="alert alert-primary" role="alert">
+            <i class="bi bi-info-circle"></i> You are in offline mode
+        </div>
+    }
+}
+
+
+@code {
+    [Parameter]
+    public int? fullTaskId { get; set; }
+
+    private bool isLoading = true;
+    private bool isOnline = true;
+    private bool isMentor = false;
+    private FullTask fullTask;
+    private UserDto currentUser;
+    private List<CategoryDto> categories = new List<CategoryDto>();
+
+    private string newbieName;
+    private string mentorName;
+    [Required]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Value must be greater than 0.")]
+    private double spendTime;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await DbContext.GetUserAsync();
+        try
+        {
+            fullTask = await _httpClient.GetFromJsonAsync<FullTask>($"api/Task/GetFullTaskById/{fullTaskId}");
+            categories = await _httpClient.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+            var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
+            string userRole = await response.Content.ReadAsStringAsync();
+            if (userRole.ToLower() != "newbie")
+                isMentor = true;
+        }
+        catch (HttpRequestException ex)
+        {
+
+            fullTask = await DbContext.GetFullTaskAsync((int)fullTaskId);
+            isOnline = false;
+
+        }
+        finally
+        {
+            newbieName = await GetUserName(fullTask.NewbieId);
+            mentorName = await GetUserName(fullTask.AssigningId);
+            isLoading = false;
+        }
+
+    }
+    private async Task<string> GetUserName(Guid? userId)
+    {
+
+        try
+        {
+            var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
+            UserName userName = new UserName((Guid)userId, user.Name, user.Surname);
+            var response = await DbContext.UpdateUserNameAsync(userName);
+            if (response == 0)
+            {
+                await DbContext.AddUserNameAsync(userName);
+            }
+            return $"{user.Name} {user.Surname}";
+        }
+        catch (HttpRequestException ex)
+        {
+            var userName = await DbContext.GetUserNameAsync((Guid)userId);
+            if (userName == null)
+            {
+                return "Unknown";
+            }
+            return $"{userName.Name} {userName.Surname}";
+        }
+
+    }
+    private async Task AddTime()
+    {
+        FullTask newFullTask = fullTask;
+        newFullTask.SpendTime += spendTime;
+        var response = await _httpClient.PutAsJsonAsync($"api/Task/EditFullTask/{fullTaskId}/{currentUser.Id}", newFullTask);
+        if (response.IsSuccessStatusCode)
+        {
+            fullTask = newFullTask;
+            spendTime = 0;
+            Toast.Make($"Time logged").Show();
+        }
+
+    }
+    private string getStatus(StatusEnum status)
+    {
+        switch(status)
+        {
+            case StatusEnum.ToDo:
+                return "to do";
+            case StatusEnum.InProgress:
+                return "in progress";
+            case StatusEnum.ToReview:
+                return "to review";
+            case StatusEnum.ReOpen:
+                return "reopen";
+            case StatusEnum.Done:
+                return "done";
+        }
+        return "";
+    }
+    private async Task SetStatus(StatusEnum status)
+    {
+        FullTask newFullTask = fullTask;
+        newFullTask.Status = status;
+        if (status == StatusEnum.Done)
+            newFullTask.FinalizationDate = DateTime.Now;
+        var response = await _httpClient.PutAsJsonAsync($"api/Task/EditFullTask/{fullTaskId}/{currentUser.Id}", newFullTask);
+        if (response.IsSuccessStatusCode)
+        {
+            fullTask = newFullTask;
+            Toast.Make($"Status changed").Show();
+        }
+    }
+
+}
+<style>
+    .card{
+        margin: 10px;
+    }
+</style>

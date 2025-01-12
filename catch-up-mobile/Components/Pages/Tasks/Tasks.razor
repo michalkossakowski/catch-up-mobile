@@ -2,76 +2,141 @@
 
 @inject HttpClient _httpClient
 @inject CatchUpLocalDb DbContext
+@inject NavigationManager NavigationManager
 
 @using catch_up_mobile.SQLite
 @using catch_up_mobile.Dtos
 <h3>Tasks</h3>
 
-<div> 
-    @if (cards == null)
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
+    </div>
+}
+else
+{
+    @if (cards != null && cards.Count == 0)
     {
-        <div class="text-center">
-            <Loading />
+        <div class="alert alert-warning" role="alert">
+            No tasks found
         </div>
     }
     else
     {
-        @if (cards.Count == 0)
-        {
-            <div class="alert alert-warning" role="alert">
-                No tasks found
-            </div>
-        }
-        else
-        {
+        <div>
             @foreach (var card in cards)
             {
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body" @onclick="() => goToDedails(card.FullTask.Id)">
                         <h5 class="card-title">@card.FullTask.Title</h5>
                         <p class="card-text">@card.Name</p>
                     </div>
                 </div>
             }
-        }
-
-        
+        </div>
     }
+    if (!isOnline)
+    {
+        <div class="alert alert-primary" role="alert">
+            <i class="bi bi-info-circle"></i> You are in offline mode
+        </div>
+    }
+}
     
-</div>
+
 
 
 @code {
-    private List<Card> cards = new List<Card>();
+    private List<Card> cards;
+    private bool isOnline = false;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        cards = new List<Card>();
-        UserDto currentUser = await DbContext.GetUserAsync();
-        var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
-        string userRole = await response.Content.ReadAsStringAsync();
-        List<FullTask> fullTasks = new List<FullTask>();
-        if(userRole.ToLower() == "mentor")
-            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByAssigningId/{currentUser.Id}");
-        else if(userRole.ToLower() == "newbie")
-            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByNewbieId/{currentUser.Id}");
-        else if (userRole.ToLower() == "admin")
-            fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
 
+        UserDto currentUser = await DbContext.GetUserAsync();
+        List<FullTask> fullTasks = new List<FullTask>();
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
+            string userRole = await response.Content.ReadAsStringAsync();
+            if (userRole.ToLower() == "mentor")
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByAssigningId/{currentUser.Id}");
+            else if (userRole.ToLower() == "newbie")
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByNewbieId/{currentUser.Id}");
+            else if (userRole.ToLower() == "admin")
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
+        }
+        catch (HttpRequestException ex)
+        {
+            isOnline = false;
+
+            var fullTasksOffline = await DbContext.GetTasksForUserAsync(currentUser.Id);
+            cards = new List<Card>();
+            foreach (var fullTask in fullTasksOffline)
+            {
+                Card newCard = new Card();
+                newCard.FullTask = fullTask;
+                newCard.Name = await GetNewbieName(fullTask.NewbieId);
+                cards.Add(newCard);
+            }
+            isLoading = false;
+            return;
+        }
+
+        isOnline = true;
+
+        cards = new List<Card>();
         foreach (var fullTask in fullTasks)
         {
+            var response = await DbContext.UpdateTaskAsync(fullTask);
+            if (response == 0)
+            {
+                await DbContext.AddTaskAsync(fullTask);
+            }
+
             Card newCard = new Card();
             newCard.FullTask = fullTask;
             newCard.Name = await GetNewbieName(fullTask.NewbieId);
             cards.Add(newCard);
+
+        }
+
+
+
+        isLoading = false;
+    }
+
+    private async Task<string> GetNewbieName(Guid? newbieId)
+    {
+
+        try
+        {
+            var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
+            UserName userName = new UserName((Guid)newbieId, user.Name, user.Surname);
+            var response = await DbContext.UpdateUserNameAsync(userName);
+            if (response == 0)
+            {
+                await DbContext.AddUserNameAsync(userName);
+            }
+            return $"{user.Name} {user.Surname}";
+        }
+        catch (HttpRequestException ex)
+        {
+            var userName = await DbContext.GetUserNameAsync((Guid)newbieId);
+            if (userName == null)
+            {
+                return "Unknown";
+            }
+            return $"{userName.Name} {userName.Surname}";
         }
 
     }
-    private async Task<string> GetNewbieName(Guid? newbieId)
+    private void goToDedails(int fullTaskId)
     {
-        var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
-
-        return $"{user.Name} {user.Surname}";
+        NavigationManager.NavigateTo($"/tasks/details/{fullTaskId}");
     }
     class Card
     {

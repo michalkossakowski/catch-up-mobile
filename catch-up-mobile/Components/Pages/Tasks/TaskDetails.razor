@@ -9,6 +9,8 @@
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Enums
 @using CommunityToolkit.Maui.Alerts
+@using CommunityToolkit.Maui.Views
+
 
 @if (isLoading)
 {
@@ -47,8 +49,8 @@ else
             </p>
         </div>
     </div>
-    
-    
+
+
     if (fullTask.MaterialsId != null)
     {
         <div class="card">
@@ -56,12 +58,20 @@ else
                 Additional materials:
             </div>
             <div class="card-body">
-                <div class="m-2">
-                    <MaterialItem materialId=fullTask.MaterialsId
-                                  showRemoveFile="false"
-                                  showDownloadFile="true"
-                                  showAddingFile="false" />
-                </div>
+                @if (isOnline)
+                {
+                    <div class="m-2">
+                        <MaterialItem materialId=fullTask.MaterialsId
+                                      showRemoveFile="false"
+                                      showDownloadFile="true"
+                                      showAddingFile="false" />
+                    </div>
+                }else{
+                    <div class="alert alert-warning text-center" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> Materials are avaliable only in online mode
+                    </div>
+                }
+                
             </div>
         </div>
         
@@ -157,10 +167,18 @@ else
             </div>
         </div>
     </div>
-    
-    
-    
-    
+
+
+
+    if (isOnline && isMentor)
+    {
+        <div class="d-flex mt-3 mb-3 btn-group ">
+            <button type="button" class="btn btn-primary" @onclick="GoToEditTask">Edit</button>
+            <button type="button" class="btn btn-danger" @onclick="async() => await DeleteTask()">
+                Delete
+            </button>
+        </div>
+    }
 
 
     if (!isOnline)
@@ -251,6 +269,7 @@ else
         {
             fullTask = newFullTask;
             spendTime = 0;
+            await DbContext.UpdateTaskAsync(fullTask);
             Toast.Make($"Time logged").Show();
         }
 
@@ -282,8 +301,35 @@ else
         if (response.IsSuccessStatusCode)
         {
             fullTask = newFullTask;
+            await DbContext.UpdateTaskAsync(fullTask);
             Toast.Make($"Status changed").Show();
         }
+    }
+    private void GoToEditTask()
+    {
+        NavigationManager.NavigateTo($"/tasks/edit/{fullTaskId}");
+    }
+    private async Task DeleteTask()
+    {
+        var popup = new ConfirmPopup($"Do you want to send this FAQ?", async (isConfirmed) =>
+        {
+            if (isConfirmed)
+            {
+                var response = await _httpClient.DeleteAsync($"api/Task/Delete/{fullTaskId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    Toast.Make($"Status changed").Show();
+                    await DbContext.DeleteTaskAsync(fullTask);
+                    NavigationManager.NavigateTo($"/tasks");
+                }
+            }
+            else
+            {
+                Toast.Make("FAQ deletion canceled").Show();
+            }
+        });
+        App.Current.MainPage.ShowPopup(popup);
+        
     }
 
 }

@@ -1,0 +1,135 @@
+@page "/taskcontent/edit/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Dtos
+
+<div class="container">
+    @if (taskContent == null)
+    {
+        <div class="text-center">
+            <Loading/>
+        </div>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @errorMessage
+            </div>
+        }
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Edit Task Content</h3>
+            </div>
+            <div class="card-body">
+                <EditForm Model="@taskContent" OnValidSubmit="@HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <InputText id="title" class="form-control" @bind-Value="taskContent.Title" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <InputTextArea id="description" class="form-control" @bind-Value="taskContent.Description" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <InputSelect id="category" class="form-control" @bind-Value="taskContent.CategoryId">
+                            <option value="">Select a category</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="material" class="form-label">Material</label>
+                        <InputSelect id="material" class="form-control" @bind-Value="taskContent.MaterialsId">
+                            <option value="">Select a material</option>
+                            @foreach (var material in materials)
+                            {
+                                <option value="@material.Id">@material.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="HandleDiscard">
+                            <i class="bi bi-x-circle"></i> Discard
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TaskContentDto? taskContent;
+    private List<CategoryDto> categories = new List<CategoryDto>();
+    private List<MaterialDto> materials = new List<MaterialDto>();
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            errorMessage = null;
+            var tasksContentTask = Http.GetFromJsonAsync<TaskContentDto>($"api/TaskContent/GetById/{Id}");
+            var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+            var materialsTask = Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
+
+            taskContent = await tasksContentTask;
+            categories = await categoriesTask;
+            materials = await materialsTask;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading data: {ex.Message}");
+            errorMessage = $"Error loading data: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/TaskContent/Edit/{Id}", taskContent);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/taskcontent");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Error updating task content: {error}");
+                errorMessage = $"Error updating task content: {error}";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+            errorMessage = $"Error saving changes: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private void HandleDiscard()
+    {
+        NavigationManager.NavigateTo("/taskcontent");
+    }
+}

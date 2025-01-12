@@ -1,0 +1,81 @@
+@page "/taskcontent"
+
+@inject HttpClient Http
+@using catch_up_backend.Dtos
+
+<h3>Task Content</h3>
+
+<EditForm Model="@newTaskContent" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <InputText id="title" class="form-control" @bind-Value="newTaskContent.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <InputTextArea id="description" class="form-control" @bind-Value="newTaskContent.Description" />
+    </div>
+
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <InputSelect id="category" class="form-control" @bind-Value="newTaskContent.CategoryId">
+            <option value="">Select a category</option>
+            @foreach (var category in categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label for="material" class="form-label">Material</label>
+        <InputSelect id="material" class="form-control" @bind-Value="newTaskContent.MaterialsId">
+            <option value="">Select a material</option>
+            @foreach (var material in materials)
+            {
+                <option value="@material.Id">@material.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Task Content</button>
+</EditForm>
+
+@code {
+    private TaskContentDto newTaskContent = new TaskContentDto();
+    private List<CategoryDto> categories = new List<CategoryDto>();
+    private List<MaterialDto> materials = new List<MaterialDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await Http.GetFromJsonAsync<List<CategoryDto>>("api/categories");
+        materials = await Http.GetFromJsonAsync<List<MaterialDto>>("api/materials");
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!categories.Any(c => c.Id == newTaskContent.CategoryId))
+        {
+            var newCategory = new CategoryDto { Name = "New Category Name" }; // Replace with actual input
+            var response = await Http.PostAsJsonAsync("api/categories", newCategory);
+            if (response.IsSuccessStatusCode)
+            {
+                var createdCategory = await response.Content.ReadFromJsonAsync<CategoryDto>();
+                newTaskContent.CategoryId = createdCategory.Id;
+            }
+        }
+
+        var result = await Http.PostAsJsonAsync("api/taskcontents", newTaskContent);
+        if (result.IsSuccessStatusCode)
+        {
+            // Handle success (e.g., show a message or redirect)
+        }
+        else
+        {
+            // Handle error
+        }
+    }
+}

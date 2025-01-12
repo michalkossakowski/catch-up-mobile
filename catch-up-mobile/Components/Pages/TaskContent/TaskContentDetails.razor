@@ -1,0 +1,90 @@
+@page "/taskcontent/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using catch_up_mobile.Dtos
+
+<div class="container">
+    @if (taskContent == null)
+    {
+        <div class="text-center">
+            @if (errorMessage != null)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+            else
+            {
+                <Loading/>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">@taskContent.Title</h3>
+                <button class="btn btn-secondary" @onclick="GoBack">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </button>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Description</h5>
+                <p class="card-text">@taskContent.Description</p>
+
+                <h5 class="card-title mt-4">Category</h5>
+                <p class="card-text">@(category?.Name ?? "No category")</p>
+
+                <h5 class="card-title mt-4">Material</h5>
+                <p class="card-text">
+                    @if (taskContent.MaterialsId.HasValue)
+                    {
+                        @(material?.Name ?? "No material attached")
+                    }
+                    else
+                    {
+                        <span>No material attached</span>
+                    }
+                </p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TaskContentDto? taskContent;
+    private CategoryDto? category;
+    private MaterialDto? material;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            taskContent = await Http.GetFromJsonAsync<TaskContentDto>($"api/TaskContent/GetById/{Id}");
+            if (taskContent != null)
+            {
+                if (taskContent.CategoryId > 0)
+                {
+                    category = await Http.GetFromJsonAsync<CategoryDto>($"api/Category/GetById/{taskContent.CategoryId}");
+                }
+                if (taskContent.MaterialsId.HasValue)
+                {
+                    material = await Http.GetFromJsonAsync<MaterialDto>($"api/Material/GetById/{taskContent.MaterialsId}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading task content: {ex.Message}");
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/taskcontent");
+    }
+} 

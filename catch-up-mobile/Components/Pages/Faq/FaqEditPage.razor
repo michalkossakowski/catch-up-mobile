@@ -15,7 +15,9 @@
 
     @if(faqModel == null)
     {
-        <Loading />
+        <div class="text-center m-5">
+            <Loading />
+        </div>
     }
     else
     {
@@ -59,8 +61,6 @@
                 <button type="submit" class="btn btn-primary w-50">Save FAQ</button>
             </div>
         </EditForm>
-
-
     }
 </div>
 

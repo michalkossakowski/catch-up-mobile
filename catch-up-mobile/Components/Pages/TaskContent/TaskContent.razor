@@ -67,15 +67,45 @@
 }
 else
 {
-    @if (taskContents.Count == 0)
+    @if (offlineMode)
     {
-        <div class="alert alert-warning" role="alert">
-            No Task Contents found
+        <div class="alert alert-warning text-center" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> You are working in offline mode. You can only view task list.
         </div>
+        
+        @if (taskContents.Any())
+        {
+            <table class="table table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th class="text-center align-middle col-title">Title</th>
+                        <th class="text-center align-middle col-category">Category</th>
+                        <th class="text-center align-middle">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in taskContents)
+                    {
+                        <tr>
+                            <td class="text-center align-middle">@task.Title</td>
+                            <td class="text-center align-middle">
+                                @(categories.FirstOrDefault(c => c.Id == task.CategoryId)?.Name ?? "No category")
+                            </td>
+                            <td class="text-center align-middle">@task.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-secondary text-center" role="alert">
+                Task list is empty
+            </div>
+        }
     }
     else
     {
-        
         <table class="table table-striped table-responsive">
             <thead>
                 <tr>
@@ -135,14 +165,36 @@ else
             
             var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
             var materialsTask = Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
+            var tasksTask = Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+            
+            await Task.WhenAll(categoriesTask, materialsTask, tasksTask);
             
             categories = await categoriesTask;
             materials = await materialsTask;
+            taskContents = await tasksTask;
+
+            await DbContext.DeleteAllTaskContentsAsync();
+            foreach (var task in taskContents)
+            {
+                await DbContext.AddTaskContentAsync(task);
+            }
             
-            await LoadTaskContents();
+            offlineMode = false;
+        }
+        catch (HttpRequestException)
+        {
+            offlineMode = true;
+
+            taskContents = await DbContext.GetTaskContentsAsync();
+            categories = await DbContext.GetCategoriesAsync();
+            materials = await DbContext.GetMaterialsAsync();
         }
         catch (Exception)
         {
+            offlineMode = true;
+            taskContents = await DbContext.GetTaskContentsAsync();
+            categories = await DbContext.GetCategoriesAsync();
+            materials = await DbContext.GetMaterialsAsync();
         }
     }
 
@@ -207,6 +259,14 @@ else
                 taskContents = new List<TaskContentDto>();
             }
 
+            await DbContext.DeleteAllTaskContentsAsync();
+            foreach (var task in taskContents)
+            {
+                await DbContext.AddTaskContentAsync(task);
+            }
+
+            offlineMode = false;
+
             if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
             {
                 await LocalNotificationCenter.Current.RequestNotificationPermission();
@@ -223,7 +283,8 @@ else
         }
         catch (HttpRequestException)
         {
-            taskContents = new List<TaskContentDto>();
+            offlineMode = true;
+            taskContents = await DbContext.GetTaskContentsAsync();
         }
     }
 

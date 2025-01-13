@@ -5,6 +5,7 @@
 @using catch_up_mobile.Dtos
 @using CommunityToolkit.Maui.Alerts
 @using System.Threading
+@using Plugin.LocalNotification;
 <style>
     td {
         white-space: normal;
@@ -164,5 +165,15 @@
             sortedNewbies = newbies;
         }
         StateHasChanged();
+        if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+        {
+            await LocalNotificationCenter.Current.RequestNotificationPermission();
+        }
+        var notification = new NotificationRequest
+        {
+            Title = "Assign Newbie to Mentor",
+            Description = $"Newbie succesfully assigned to Mentor."
+        };
+        await LocalNotificationCenter.Current.Show(notification);
     }
 }

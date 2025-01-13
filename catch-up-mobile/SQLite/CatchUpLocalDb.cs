@@ -18,6 +18,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<FingerprintCredentials>().Wait();
             _database.CreateTableAsync<UserDto>().Wait();
             _database.CreateTableAsync<FontSizeDto>().Wait();
+            _database.CreateTableAsync<ThemeDto>().Wait();
             _database.CreateTableAsync<LocalizationSettingDto>().Wait();
         }
         // CompanyCities
@@ -151,6 +152,23 @@ namespace catch_up_mobile.SQLite
             };
 
             return await _database.InsertAsync(setting);
+        }
+        public Task<ThemeDto> GetThemeAsync()
+        {
+            return _database.Table<ThemeDto>().FirstOrDefaultAsync();
+        }
+        public Task<int> SaveThemeAsync(ThemeDto theme)
+        {
+            var existingTheme = _database.Table<ThemeDto>().FirstOrDefaultAsync().Result;
+            if (existingTheme != null)
+            {
+                existingTheme.Name = theme.Name;
+                return _database.UpdateAsync(existingTheme);
+            }
+            else
+            {
+                return _database.InsertAsync(theme);
+            }
         }
     }
 }

@@ -39,6 +39,12 @@
             document.body.classList.remove("font-size-small", "font-size-medium", "font-size-large");
             document.body.classList.add(size);
         }
+        function changeTheme(theme) {
+            const htmlTag = document.documentElement;  // Pobierz tag <html>
+
+            // Ustaw temat na przekazany parametr
+            htmlTag.setAttribute('data-bs-theme', theme);
+        }
     </script>
 </body>
 

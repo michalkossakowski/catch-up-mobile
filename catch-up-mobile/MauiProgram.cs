@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
 using catch_up_mobile.SQLite;
 using Plugin.Fingerprint;
+using catch_up_mobile.Components;
+
 
 namespace catch_up_mobile
 {
@@ -50,10 +52,13 @@ namespace catch_up_mobile
 
             // Biometric Auth
             builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();
+            
 
             // ----------- Custom Section End -----------
             #if ANDROID
              CrossFingerprint.SetCurrentActivityResolver(() => Platform.CurrentActivity);
+            builder.Services.AddSingleton<ILightSensorService, LightSensorService>();
+
             #endif
             return builder.Build();
         }

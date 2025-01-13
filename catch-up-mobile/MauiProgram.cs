@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
 using catch_up_mobile.SQLite;
 using Plugin.Fingerprint;
+using Plugin.LocalNotification;
 
 namespace catch_up_mobile
 {
@@ -16,6 +17,7 @@ namespace catch_up_mobile
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkitCamera()
                 .UseMauiCommunityToolkit()
+                .UseLocalNotification()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

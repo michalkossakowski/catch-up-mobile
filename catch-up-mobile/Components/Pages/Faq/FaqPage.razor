@@ -102,6 +102,11 @@
                     </div>
                 }
             </div>
+
+            @if (!offlineMode)
+            {
+                <button class="btn btn-danger" @onclick="ThereIsNothingWeCanDo">You can't find answear for your question?</button>
+            }
         }
         if (isAdmin)
         {
@@ -223,5 +228,10 @@
         {
             System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
         }
+    }
+
+    private async Task ThereIsNothingWeCanDo()
+    {
+        await Microsoft.Maui.ApplicationModel.Launcher.OpenAsync("https://www.youtube.com/shorts/ZfsjEyXobTI");
     }
 }

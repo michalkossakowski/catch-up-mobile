@@ -1,67 +1,298 @@
 ﻿@page "/tasks"
 
 @inject HttpClient _httpClient
+@inject CatchUpLocalDb DbContext
 @inject NavigationManager NavigationManager
 
-
+@using catch_up_mobile.SQLite
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Enums
 <h3>Tasks</h3>
 
-<div class="accordion" id="accordionExample">
-    @foreach (var card in cards)
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <Loading />
+    </div>
+}
+else
+{
+    @if (cards != null && cards.Count == 0)
     {
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">@card.FullTask.Title</h5>
-                <p class="card-text">@card.Name</p>
-                    <div class="d-flex mt-3 mb-3 btn-group ">
-                        <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(card.FullTask.Id)">Feedback</button>
-                    </div>
-            </div>
+        <div class="alert alert-warning" role="alert">
+            No tasks found
         </div>
     }
-</div>
+    else
+    {
+        <div class="mt-3 mb-3 text-center">
+            <input class="form-control" placeholder="Search for Task ..." @oninput="OnSearchQueryChanged">
+        </div>
+        <select class="form-select" @onchange="OnStatusChanged">
+            <option value="">Select Status</option>
+            @foreach (var status in Enum.GetValues(typeof(StatusEnum)))
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+        <select class="form-select" @onchange="OnUserChanged">
+            @if (userRole != null)
+            {
+                @if (userRole.ToLower() == "newbie")
+                {
+                    <option value="">Select Mentor</option>
+                }
+                else
+                {
+                    <option value="">Select Newbie</option>
+                }
+
+            }
+            else
+            {
+                <option value="">Select Newbie</option>
+            }
+
+
+            @foreach (var user in availableUsers)
+            {
+                <option value="@user.Id">@user.Name @user.Surname</option>
+            }
+        </select>
+        <div>
+            @foreach (var card in filteredCards)
+            {
+                <div class="card">
+                    <div class="card-body" @onclick="() => GoToDedails(card.FullTask.Id)">
+                        <h5 class="card-title">@card.FullTask.Title</h5>
+                        <p class="card-text">@card.Name</p>
+                    </div>
+                    <div class="card-footer">
+                        @(getStatus(card.FullTask.Status))
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    if (!isOnline)
+    {
+        <div class="alert alert-primary" role="alert">
+            <i class="bi bi-info-circle"></i> You are in offline mode
+        </div>
+    }
+}
+
+
 
 
 @code {
-    private List<Card> cards = new List<Card>();
+    private List<Card> cards;
+    private List<Card> filteredCards;
+    private List<UserDto> availableUsers = new List<UserDto>();
+    private UserDto currentUser;
+    private bool isOnline = false;
+    private bool isLoading = true;
+    private string searchQuery = string.Empty;
+    private StatusEnum? selectedStatus = null;
+    private Guid? selectedUserId = null;
 
+    private string userRole;
     protected override async Task OnInitializedAsync()
     {
         cards = new List<Card>();
-        List<FullTask> fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
+        currentUser = await DbContext.GetUserAsync();
+        List<FullTask> fullTasks = new List<FullTask>();
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
+            userRole = await response.Content.ReadAsStringAsync();
+            if (userRole.ToLower() == "mentor")
+            {
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByAssigningId/{currentUser.Id}");
+                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{currentUser.Id}");
+            }
+            else if (userRole.ToLower() == "newbie")
+            {
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByNewbieId/{currentUser.Id}");
+                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByNewbie/{currentUser.Id}");
+            }
+
+            else if (userRole.ToLower() == "admin")
+            {
+                fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
+                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/User/GetAll");
+            }
+
+
+        }
+        catch (HttpRequestException ex)
+        {
+            isOnline = false;
+
+            var fullTasksOffline = await DbContext.GetTasksForUserAsync(currentUser.Id);
+            cards = new List<Card>();
+            foreach (var fullTask in fullTasksOffline)
+            {
+                Card newCard = new Card();
+                newCard.FullTask = fullTask;
+                newCard.Name = await GetNewbieName(fullTask.NewbieId);
+                cards.Add(newCard);
+            }
+            filteredCards = cards;
+            isLoading = false;
+            return;
+        }
+
+        isOnline = true;
+
 
         foreach (var fullTask in fullTasks)
         {
+            var response = await DbContext.UpdateTaskAsync(fullTask);
+            if (response == 0)
+            {
+                await DbContext.AddTaskAsync(fullTask);
+            }
+
             Card newCard = new Card();
             newCard.FullTask = fullTask;
             newCard.Name = await GetNewbieName(fullTask.NewbieId);
             cards.Add(newCard);
+
+        }
+        filteredCards = cards;
+
+
+        isLoading = false;
+    }
+
+    private async Task<string> GetNewbieName(Guid? newbieId)
+    {
+
+        try
+        {
+            var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
+            UserName userName = new UserName((Guid)newbieId, user.Name, user.Surname);
+            var response = await DbContext.UpdateUserNameAsync(userName);
+            if (response == 0)
+            {
+                await DbContext.AddUserNameAsync(userName);
+            }
+            return $"{user.Name} {user.Surname}";
+        }
+        catch (HttpRequestException ex)
+        {
+            var userName = await DbContext.GetUserNameAsync((Guid)newbieId);
+            if (userName == null)
+            {
+                return "Unknown";
+            }
+            return $"{userName.Name} {userName.Surname}";
         }
 
     }
-    private async Task<string> GetNewbieName(Guid? newbieId)
+    private void GoToDedails(int fullTaskId)
     {
-        var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
+        NavigationManager.NavigateTo($"/tasks/details/{fullTaskId}");
+    }
+    private void OnSearchQueryChanged(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        FilterTasks();
+    }
+    private void OnStatusChanged(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value?.ToString();
 
-        return $"{user.Name} {user.Surname}";
+        if (string.IsNullOrEmpty(selectedValue)) // Jeśli wartość jest null lub pusta
+        {
+            selectedStatus = null; // Przypisz null do selectedStatus
+        }
+        else if (Enum.TryParse(typeof(StatusEnum), selectedValue, out var result)) // Jeśli wartość odpowiada enumowi
+        {
+            selectedStatus = (StatusEnum?)result; // Przypisz wartość enum do selectedStatus
+        }
+
+        FilterTasks(); // Filtruj zadania zgodnie z wybranym statusem
+    }
+    private void OnUserChanged(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value?.ToString();
+        selectedUserId = string.IsNullOrEmpty(selectedValue) ? null : Guid.Parse(selectedValue);
+
+        FilterTasks();
+    }
+
+    private async Task FilterTasks()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredCards = cards.ToList();
+        }
+        else
+        {
+            filteredCards = cards
+                .Where(f => f.FullTask.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        if (selectedStatus.HasValue)
+        {
+            filteredCards = filteredCards
+                .Where(s => s.FullTask.Status == selectedStatus.Value)
+                .ToList();
+        }
+        if (selectedUserId.HasValue)
+        {
+            if (isOnline && userRole != null)
+            {
+                if (userRole.ToLower() == "newbie")
+                {
+                    filteredCards = filteredCards
+                        .Where(s => s.FullTask.AssigningId == selectedUserId.Value)
+                        .ToList();
+                }
+                else
+                {
+                    filteredCards = filteredCards
+                        .Where(s => s.FullTask.NewbieId == selectedUserId.Value)
+                        .ToList();
+                }
+            }
+            else if (isOnline)
+            {
+                filteredCards = filteredCards
+                        .Where(s => s.FullTask.AssigningId == selectedUserId.Value || s.FullTask.NewbieId == selectedUserId.Value)
+                        .ToList();
+            }
+
+        }
+    }
+    private string getStatus(StatusEnum status)
+    {
+        switch (status)
+        {
+            case StatusEnum.ToDo:
+                return "to do";
+            case StatusEnum.InProgress:
+                return "in progress";
+            case StatusEnum.ToReview:
+                return "to review";
+            case StatusEnum.ReOpen:
+                return "reopen";
+            case StatusEnum.Done:
+                return "done";
+        }
+        return "";
     }
     class Card
     {
         public FullTask FullTask;
         public string Name;
     }
-    private void NavigateToFeedback(int taskId)
-    {
-        try
-        {
-            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Task}&resourceId={taskId}";
-            NavigationManager.NavigateTo(url);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
-        }
-    }
 }
+<style>
+    .form-select{
+        margin-bottom: 10px
+    }
+</style>

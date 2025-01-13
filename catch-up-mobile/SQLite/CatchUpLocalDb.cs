@@ -19,6 +19,9 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<UserDto>().Wait();
             _database.CreateTableAsync<FontSizeDto>().Wait();
             _database.CreateTableAsync<LocalizationSettingDto>().Wait();
+            _database.CreateTableAsync<FullTask>().Wait();
+            _database.CreateTableAsync<UserName>().Wait();
+
         }
         // CompanyCities
         public Task<List<CompanyCityDto>> GetCitiesAsync()
@@ -114,7 +117,46 @@ namespace catch_up_mobile.SQLite
         {
             return _database.DeleteAllAsync<UserDto>();
         }
-
+        //Tasks
+        public Task<List<FullTask>> GetAllFullTasksAsync()
+        {
+            return _database.Table<FullTask>().ToListAsync();
+        }
+        public Task<List<FullTask>> GetTasksForUserAsync(Guid userId)
+        {
+            return _database.Table<FullTask>()
+                .Where(p => p.AssigningId == userId || p.NewbieId == userId)
+                .ToListAsync();
+        }
+        public Task<FullTask> GetFullTaskAsync(int taskId)
+        {
+            return _database.Table<FullTask>().FirstAsync(p => p.Id == taskId);
+        }
+        public Task<int> AddTaskAsync(FullTask fullTask)
+        {
+            return _database.InsertAsync(fullTask);
+        }
+        public Task<int> UpdateTaskAsync(FullTask fullTask)
+        {
+            return _database.UpdateAsync(fullTask);
+        }
+        public Task<int> DeleteTaskAsync(FullTask fullTask)
+        {
+            return _database.DeleteAsync(fullTask);
+        }
+        // UsersName
+        public Task<UserName> GetUserNameAsync(Guid userId)
+        {
+            return _database.Table<UserName>().FirstAsync(p => p.Id == userId);
+        }
+        public Task<int> AddUserNameAsync(UserName userName)
+        {
+            return _database.InsertAsync(userName);
+        }
+        public Task<int> UpdateUserNameAsync(UserName userName)
+        {
+            return _database.UpdateAsync(userName);
+        }
         //Font Size
         public Task<FontSizeDto> GetFontSizeAsync()
         {

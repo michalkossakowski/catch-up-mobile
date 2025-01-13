@@ -148,7 +148,7 @@
         }
         else if (ResourceTypeValue == (int)ResourceTypeEnum.Task)
         {
-            NavigationManager.NavigateTo("/tasks");
+            NavigationManager.NavigateTo($"/tasks/details/{ResourceId}");
         }
     }
 }

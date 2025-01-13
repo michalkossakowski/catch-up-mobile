@@ -27,7 +27,7 @@
         </div>
         <div class="mb-3">
             <label for="receiver" class="form-label">Receiver</label>
-            <InputSelect id="receiver" class="form-control" @bind-Value="feedbackModel.ReceiverId">
+            <InputSelect id="receiver" class="form-control" @bind-Value="feedbackModel.SelectedReceiverId">
                 <option value="">Select an admin</option>
                 @foreach (var admin in admins)
                 {
@@ -68,7 +68,9 @@
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Please select a receiver")]
-        public Guid ReceiverId { get; set; }
+        public string SelectedReceiverId { get; set; } = string.Empty;
+
+        public Guid ReceiverId => string.IsNullOrEmpty(SelectedReceiverId) ? Guid.Empty : Guid.Parse(SelectedReceiverId);
 
         public Guid SenderId { get; set; }
         public ResourceTypeEnum ResourceType { get; set; }

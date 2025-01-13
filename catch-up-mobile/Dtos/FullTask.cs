@@ -1,5 +1,6 @@
 ﻿using catch_up_mobile.Enums;
 using SQLite;
+using System.ComponentModel.DataAnnotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace catch_up_mobile.Dtos
         public DateTime? FinalizationDate { get; set; }
         public DateTime? Deadline { get; set; }
         public double SpendTime { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Value must be greater than 0.")]
         public int Priority { get; set; }
         public int? Rate { get; set; }
     }

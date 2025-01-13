@@ -81,6 +81,14 @@ else
             <i class="bi bi-info-circle"></i> You are in offline mode
         </div>
     }
+    else
+    {
+        <button class="btn btn-danger btn-lg w-100 mt-4"
+                @onclick="OpenYouTube">
+            <i class="bi bi-youtube"></i>
+            Open YouTube
+        </button>
+    }
 }
 
 
@@ -289,6 +297,17 @@ else
     {
         public FullTask FullTask;
         public string Name;
+    }
+    private async Task OpenYouTube()
+    {
+        try
+        {
+            await Launcher.OpenAsync("https://www.youtube.com/watch?v=ClC4s6EXyn4");
+        }
+        catch (Exception ex)
+        {
+            
+        }
     }
 }
 <style>

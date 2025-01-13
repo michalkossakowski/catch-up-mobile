@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
 using catch_up_mobile.SQLite;
 using Plugin.Fingerprint;
+using Plugin.LocalNotification;
 
 namespace catch_up_mobile
 {
@@ -16,6 +17,7 @@ namespace catch_up_mobile
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkitCamera()
                 .UseMauiCommunityToolkit()
+                .UseLocalNotification()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -36,7 +38,7 @@ namespace catch_up_mobile
             };
             builder.Services.AddSingleton(sp => new HttpClient(httpClientHandler)
             {
-                BaseAddress = new Uri("https://localhost:7097/")
+                BaseAddress = new Uri("https://lqzjvplf-7097.euw.devtunnels.ms/")
             });
 
             //Record Audio

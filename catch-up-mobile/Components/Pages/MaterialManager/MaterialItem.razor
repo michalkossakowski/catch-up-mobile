@@ -5,6 +5,7 @@
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.Components.Camera
 @using System.ComponentModel.DataAnnotations
+@using Plugin.LocalNotification;
 
 @using CommunityToolkit.Maui.Storage
 @using CommunityToolkit.Maui.Alerts
@@ -154,7 +155,7 @@
         {
             await Toast.Make($"Error in creating material {ex.Message}").Show();
         }
-        
+
     }
 
     private async Task RemoveFile(int fileId)
@@ -163,17 +164,17 @@
         {
             if (material != null)
             {
-                 var popup = new ConfirmPopup($"Do you want to delete this file?", async (isConfirmed) =>
-                 {
-                     if (isConfirmed)
-                     {
-                         await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
-                         material.Files = material.Files.Where(f => f.Id != fileId).ToList();
-                         await Toast.Make("Schooling successfully deleted").Show();
+                var popup = new ConfirmPopup($"Do you want to delete this file?", async (isConfirmed) =>
+                {
+                    if (isConfirmed)
+                    {
+                        await _httpClient.PostAsJsonAsync($"api/material/RemoveFile/{materialId}/{fileId}", new { });
+                        material.Files = material.Files.Where(f => f.Id != fileId).ToList();
+                        await Toast.Make("Schooling successfully deleted").Show();
 
-                         StateHasChanged();
-                     }
-                 });
+                        StateHasChanged();
+                    }
+                });
                 App.Current.MainPage.ShowPopup(popup);
             }
         }
@@ -199,9 +200,25 @@
                 // var fileSaverResult = await FileSaver.Default.SaveAsync(fileName, stream, saverProgress);
 
                 if (fileSaverResult.IsSuccessful)
+                {
                     await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
+                    if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+                    {
+                        await LocalNotificationCenter.Current.RequestNotificationPermission();
+                    }
+                    var notification = new NotificationRequest
+                        {
+                            Title = "Download Complete",
+                            Description = $"File {fileName} downloaded successfully.",
+                            ReturningData = fileSaverResult.FilePath,
+                            NotificationId = fileId
+                        };
+                    await LocalNotificationCenter.Current.Show(notification);
+                }
                 else
+                {
                     await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
+                }
             }
             else
                 await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();

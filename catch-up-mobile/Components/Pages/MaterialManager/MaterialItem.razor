@@ -80,12 +80,14 @@
     {
         <EditForm Model="materialModal" OnValidSubmit="CreateMaterial">
             <DataAnnotationsValidator />
-            <div class="input-group mb-3">
-                <InputText type="text" class="form-control" placeholder="Material's name" @bind-Value="materialModal.Name" />
+            <div class="mb-3">
+                <div class="input-group mb-3">
+                    <InputText type="text" class="form-control" placeholder="Material's name" @bind-Value="materialModal.Name" />
+                    <button class="btn btn-outline-secondary" type="submit">
+                        Create
+                    </button>
+                </div>
                 <ValidationMessage For="() => materialModal.Name" />
-                <button class="btn btn-outline-secondary" type="submit">
-                    Create
-                </button>
             </div>
         </EditForm>
     }

@@ -97,8 +97,4 @@
 		</MauiXaml>
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Components\Pages\File\" />
-	</ItemGroup>
-
 </Project>

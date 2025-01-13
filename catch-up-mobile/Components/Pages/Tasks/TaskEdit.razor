@@ -1,0 +1,96 @@
+﻿@page "/tasks/edit/{fullTaskId:int?}"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject CatchUpLocalDb DbContext
+@using catch_up_mobile.SQLite
+@using CommunityToolkit.Maui.Alerts
+@using System.ComponentModel.DataAnnotations;
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.Enums
+<h3>EditTask</h3>
+
+<EditForm Model="@newFullTask" OnValidSubmit="@HandleValidSubmit" >
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <InputText id="title" class="form-control" @bind-Value="newFullTask.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <InputTextArea id="description" class="form-control" @bind-Value="newFullTask.Description" />
+    </div>
+
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <InputSelect id="category" class="form-control" @bind-Value="newFullTask.CategoryId">
+            <option value="">Select a category</option>
+            @foreach (var category in categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label for="material" class="form-label">Material</label>
+        <InputSelect id="material" class="form-control" @bind-Value="newFullTask.MaterialsId">
+            <option value="">Select a material</option>
+            @foreach (var material in materials)
+            {
+                <option value="@material.Id">@material.Name</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="mb-3">
+        <label for="deadline" class="form-label">Deadline</label>
+        <InputDate id="deadline" class="form-control" @bind-Value="newFullTask.Deadline" />
+    </div>
+    <div class="mb-3">
+        <label for="title" class="form-label">Priority</label>
+        <InputNumber id="priority" class="form-control" @bind-Value="newFullTask.Priority" />
+    </div>
+    <button type="submit" class="btn btn-primary">Edit</button>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public int? fullTaskId { get; set; }
+
+    private FullTask newFullTask = new FullTask();
+    private List<CategoryDto> categories = new List<CategoryDto>();
+    private List<MaterialDto> materials = new List<MaterialDto>();
+
+    private bool isOnline = false;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            categories = await _httpClient.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+            materials = await _httpClient.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
+            newFullTask = await _httpClient.GetFromJsonAsync<FullTask>($"api/Task/GetFullTaskById/{fullTaskId}");
+        }
+        catch (HttpRequestException ex)
+        {
+            isOnline = false;
+            return;
+        }
+        isOnline = true;
+
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        UserDto currentUser = await DbContext.GetUserAsync();
+        var response = await _httpClient.PutAsJsonAsync($"api/Task/EditFullTask/{newFullTask.Id}/{currentUser.Id}", newFullTask);
+        if (response.IsSuccessStatusCode)
+        {
+            Toast.Make($"Task edited").Show();
+            NavigationManager.NavigateTo($"/tasks/details/{fullTaskId}");
+        }
+    }
+}

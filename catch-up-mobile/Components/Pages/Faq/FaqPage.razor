@@ -38,74 +38,85 @@
                 <input class="form-control" placeholder="Search for FAQ ..." @oninput="OnSearchQueryChanged">
             </div>
             <div class="accordion text-start mt-3 mb-3" id="accordionExample">
-                @for (int i = 0; i < filteredFaqs.Count; i++)
+                @if(filteredFaqs.Count() == 0)
                 {
-                    var faq = filteredFaqs[i];
-                    var collapseId = $"collapse{i}";
-                    var headingId = $"heading{i}";
+                    <div class="alert alert-secondary text-center" role="alert">
+                        There is no FAQs with '@searchQuery' in Question
+                    </div>
+                }
+                else
+                {
+                    @for (int i = 0; i < filteredFaqs.Count; i++)
+                    {
+                        var faq = filteredFaqs[i];
+                        var collapseId = $"collapse{i}";
+                        var headingId = $"heading{i}";
 
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="@headingId">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
-                                <strong>@(i + 1). @faq.Question</strong>
-                            </button>
-                        </h2>
-                        <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
-                            <div class="accordion-body">
-                                @faq.Answer
-                                @if (faq.MaterialId != null)
-                                {
-                                    <br />
-                                    <br />
-                                    <p>Additional Materials:</p>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="@headingId">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                    <strong>@(i + 1). @faq.Question</strong>
+                                </button>
+                            </h2>
+                            <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    @faq.Answer
+                                    @if (faq.MaterialId != null)
+                                    {
+                                        <br />
+                                        <br />
+                                        <p>Additional Materials:</p>
+
+                                        @if (!offlineMode)
+                                        {
+                                            <div class="m-2">
+
+                                                <MaterialItem materialId=faq.MaterialId
+                                                              showRemoveFile="false"
+                                                              showDownloadFile="true"
+                                                              showAddingFile="false" />
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning text-center" role="alert">
+                                                <i class="bi bi-exclamation-triangle"></i> Materials are avaliable only in online mode
+                                            </div>
+                                        }
+                                    }
+
+                                    @if (isAdmin && !offlineMode)
+                                    {
+                                        <div class="d-flex mt-3 mb-3 btn-group">
+                                            <button type="button" class="btn btn-primary w-50" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
+                                            <button type="button" class="btn btn-danger w-50" @onclick="() => DeleteFaq(faq)">Delete</button>
+                                        </div>
+                                    }
 
                                     @if (!offlineMode)
                                     {
-                                        <div class="m-2">
-
-                                            <MaterialItem materialId=faq.MaterialId
-                                            showRemoveFile="false"
-                                            showDownloadFile="true"
-                                            showAddingFile="false" />
+                                        <div class="d-flex mt-3 mb-3 btn-group ">
+                                            <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
                                         </div>
                                     }
                                     else
                                     {
                                         <div class="alert alert-warning text-center" role="alert">
-                                            <i class="bi bi-exclamation-triangle"></i> Materials are avaliable only in online mode
+                                            <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
                                         </div>
                                     }
-                                }
-
-                                @if (isAdmin && !offlineMode)
-                                {
-                                    <div class="d-flex mt-3 mb-3 btn-group">
-                                        <button type="button" class="btn btn-primary w-50" @onclick="() => OpenFaqEdit(faq.Id)">Edit</button>
-                                        <button type="button" class="btn btn-danger w-50" @onclick="() => DeleteFaq(faq)">Delete</button>
-                                    </div>
-                                }
-
-                                @if (!offlineMode)
-                                {
-                                    <div class="d-flex mt-3 mb-3 btn-group ">
-                                        <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(faq.Id)">Feedback</button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="alert alert-warning text-center" role="alert">
-                                    <i class="bi bi-exclamation-triangle"></i> You cannot send feedback in offline mode
-                                    </div>
-                                }
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    }
                 }
             </div>
 
             @if (!offlineMode)
             {
-                <button class="btn btn-danger" @onclick="ThereIsNothingWeCanDo">You can't find answear for your question?</button>
+                <div class="d-flex mt-3 mb-3 btn-group ">
+                    <button class="btn btn-danger" @onclick="ThereIsNothingWeCanDo">You can't find answear for your question?</button>
+                </div>
             }
         }
         if (isAdmin)

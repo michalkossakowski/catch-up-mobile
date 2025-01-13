@@ -170,10 +170,11 @@ else
 
 
 
-    if (isOnline && isMentor)
+    if (isOnline && isMentor && fullTaskId.HasValue)
     {
         <div class="d-flex mt-3 mb-3 btn-group ">
             <button type="button" class="btn btn-primary" @onclick="GoToEditTask">Edit</button>
+            <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(fullTaskId.Value)">Feedback</button>
             <button type="button" class="btn btn-danger" @onclick="async() => await DeleteTask()">
                 Delete
             </button>
@@ -331,7 +332,18 @@ else
         App.Current.MainPage.ShowPopup(popup);
         
     }
-
+    private void NavigateToFeedback(int taskId)
+    {
+        try
+        {
+            var url = $"/feedback/add?resourceType={(int)ResourceTypeEnum.Task}&resourceId={taskId}";
+            NavigationManager.NavigateTo(url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        }
+    }
 }
 <style>
     .card{

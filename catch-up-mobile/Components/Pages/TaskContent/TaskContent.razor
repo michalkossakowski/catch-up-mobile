@@ -7,6 +7,7 @@
 @using catch_up_mobile.Dtos
 @using Microsoft.Maui.Devices.Sensors
 @using catch_up_mobile.SQLite
+@using Plugin.LocalNotification
 @implements IDisposable
 
 <h3>Task Content</h3>
@@ -203,6 +204,20 @@ else
             {
                 taskContents = new List<TaskContentDto>();
             }
+
+            if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+            {
+                await LocalNotificationCenter.Current.RequestNotificationPermission();
+            }
+
+            var notification = new NotificationRequest
+            {
+                Title = "Task List Refresh",
+                Description = "Task list has been refreshed successfully",
+                ReturningData = "TaskListRefresh",
+                NotificationId = 1
+            };
+            await LocalNotificationCenter.Current.Show(notification);
         }
         catch (HttpRequestException)
         {

@@ -5,6 +5,7 @@
 @using catch_up_mobile.Dtos
 @using CommunityToolkit.Maui.Alerts
 @using System.Threading
+@using Plugin.LocalNotification;
 
 <div class="container mt-5">
     <h2>Assign new Mentor to</h2>
@@ -151,5 +152,16 @@
         mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedMentors/{NewbieId}");
         sortedMentors = mentors;
         StateHasChanged();
+        if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+        {
+            await LocalNotificationCenter.Current.RequestNotificationPermission();
+        }
+        var notification = new NotificationRequest
+            {
+                Title = "Assign Mentor to Newbie",
+                Description = $"Mentor succesfully assigned to Newbie.",
+                NotificationId = 1
+            };
+        await LocalNotificationCenter.Current.Show(notification);
     }
 }

@@ -95,19 +95,20 @@
     private string searchQuery = string.Empty;
     private int? selectedCategoryId = null;
     private bool hasAccess = false;
-
+    private Guid userId;
+    private string userPosition;
     protected override async Task OnInitializedAsync()
     {
+        await checkAccess();
         await LoadSchoolings();
         await LoadCategories();
-        await checkAccess();
     }
     private async Task checkAccess()
     {
         try
         {
-            var userId = (await _localDb.GetUserAsync()).Id;
-            var userPosition = await _httpClient.GetStringAsync($"api/User/GetRole/{userId}");
+            userId = _localDb.GetUserAsync().Result.Id;
+            userPosition = await _httpClient.GetStringAsync($"api/User/GetRole/{userId}");
             Console.WriteLine(userPosition);
             if (userPosition == "Admin" || userPosition == "Mentor")
                 hasAccess = true;
@@ -121,7 +122,11 @@
     {
         try
         {
-            fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
+            if (userPosition == "Admin" || userPosition == "Mentor")
+                fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
+            else
+                fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull/{userId}");
+
             FilterSchoolings();
         }
         catch (Exception ex)
@@ -188,8 +193,10 @@
                 {
                     fullSchoolings.Remove(itemToRemove);
                     await Toast.Make("Schooling successfully deleted").Show();
+                    FilterSchoolings();
 
                     StateHasChanged();
+                    FilterSchoolings();
                 }
             }
         });

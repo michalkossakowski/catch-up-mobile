@@ -8,27 +8,33 @@
 @using catch_up_mobile.Enums
 @using CommunityToolkit.Maui.Alerts
 @using catch_up_mobile.SQLite
+@using System.ComponentModel.DataAnnotations
 
 <h3>Add Feedback</h3>
 <div class="container">
-    <EditForm Model="feedback" OnValidSubmit="SubmitFeedback">
+    <EditForm Model="feedbackModel" OnValidSubmit="SubmitFeedback">
+        <DataAnnotationsValidator />
+        
         <div class="mb-3">
             <label for="title" class="form-label">Title</label>
-            <InputText id="title" class="form-control" @bind-Value="feedback.Title" />
+            <InputText id="title" class="form-control" @bind-Value="feedbackModel.Title" />
+            <ValidationMessage For="@(() => feedbackModel.Title)" />
         </div>
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
-            <InputTextArea id="description" class="form-control" @bind-Value="feedback.Description" />
+            <InputTextArea id="description" class="form-control" @bind-Value="feedbackModel.Description" />
+            <ValidationMessage For="@(() => feedbackModel.Description)" />
         </div>
         <div class="mb-3">
             <label for="receiver" class="form-label">Receiver</label>
-            <InputSelect id="receiver" class="form-control" @bind-Value="feedback.ReceiverId">
+            <InputSelect id="receiver" class="form-control" @bind-Value="feedbackModel.ReceiverId">
                 <option value="">Select an admin</option>
                 @foreach (var admin in admins)
                 {
                     <option value="@admin.Id">@admin.Name @admin.Surname</option>
                 }
             </InputSelect>
+            <ValidationMessage For="@(() => feedbackModel.ReceiverId)" />
         </div>
         <button type="submit" class="btn btn-primary">Submit</button>
         <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
@@ -37,10 +43,10 @@
 
 @code {
     private Guid userId;
-    private FeedbackDto feedback = new FeedbackDto();
     private List<UserDto> admins = new List<UserDto>();
-
+    private FeedbackModel feedbackModel = new();
     private string errorMessage;
+
     [Parameter]
     [SupplyParameterFromQuery(Name = "resourceId")]
     public int ResourceId { get; set; }
@@ -51,16 +57,36 @@
 
     private ResourceTypeEnum _resourceType;
 
+    private class FeedbackModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 100 characters")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(1000, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 1000 characters")]
+        public string Description { get; set; }
+
+        [Required(ErrorMessage = "Please select a receiver")]
+        public Guid ReceiverId { get; set; }
+
+        public Guid SenderId { get; set; }
+        public ResourceTypeEnum ResourceType { get; set; }
+        public int ResourceId { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             UserDto user = await DbContext.GetUserAsync();
             userId = user.Id;
-            feedback.SenderId = userId;
-            feedback.ResourceType = (ResourceTypeEnum)ResourceTypeValue;
-            feedback.ResourceId = ResourceId;
-            feedback.createdDate = DateTime.Now;
+            
+            feedbackModel.SenderId = userId;
+            feedbackModel.ResourceType = (ResourceTypeEnum)ResourceTypeValue;
+            feedbackModel.ResourceId = ResourceId;
+            feedbackModel.CreatedDate = DateTime.Now;
 
             admins = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User/GetMentorAdmin");
         }
@@ -76,24 +102,24 @@
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api/feedback/Add", feedback);
+            var feedbackDto = new FeedbackDto
+            {
+                Title = feedbackModel.Title,
+                Description = feedbackModel.Description,
+                SenderId = feedbackModel.SenderId,
+                ReceiverId = feedbackModel.ReceiverId,
+                ResourceType = feedbackModel.ResourceType,
+                ResourceId = feedbackModel.ResourceId,
+                createdDate = feedbackModel.CreatedDate
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("api/feedback/Add", feedbackDto);
             var content = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
                 await Toast.Make($"Feedback successfully added").Show();
-                if (ResourceTypeValue == (int)ResourceTypeEnum.Faq)
-                {
-                    NavigationManager.NavigateTo("/faq");
-                }
-                else if (ResourceTypeValue == (int)ResourceTypeEnum.Schooling)
-                {
-                    NavigationManager.NavigateTo("/schoolingList");
-                }
-                else if (ResourceTypeValue == (int)ResourceTypeEnum.Task)
-                {
-                    NavigationManager.NavigateTo("/tasks");
-                }
+                Cancel();
             }
             else
             {

@@ -38,7 +38,7 @@ namespace catch_up_mobile
             };
             builder.Services.AddSingleton(sp => new HttpClient(httpClientHandler)
             {
-                BaseAddress = new Uri("https://localhost:7097/")
+                BaseAddress = new Uri("https://hbrflb7t-7097.euw.devtunnels.ms/")
             });
 
             //Record Audio

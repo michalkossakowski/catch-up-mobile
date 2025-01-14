@@ -21,6 +21,9 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<LocalizationSettingDto>().Wait();
             _database.CreateTableAsync<FullTask>().Wait();
             _database.CreateTableAsync<UserName>().Wait();
+            _database.CreateTableAsync<TaskContentDto>().Wait();
+            _database.CreateTableAsync<CategoryDto>().Wait();
+            _database.CreateTableAsync<MaterialDto>().Wait();
 
         }
         // CompanyCities
@@ -193,6 +196,69 @@ namespace catch_up_mobile.SQLite
             };
 
             return await _database.InsertAsync(setting);
+        }
+
+        // TaskContent methods
+        public Task<TaskContentDto> GetTaskContentAsync(int taskId)
+        {
+            return _database.Table<TaskContentDto>().FirstOrDefaultAsync(t => t.Id == taskId);
+        }
+
+        public Task<List<TaskContentDto>> GetTaskContentsAsync()
+        {
+            return _database.Table<TaskContentDto>().ToListAsync();
+        }
+
+        public Task<int> AddTaskContentAsync(TaskContentDto taskContent)
+        {
+            return _database.InsertAsync(taskContent);
+        }
+
+        public Task<int> UpdateTaskContentAsync(TaskContentDto taskContent)
+        {
+            return _database.UpdateAsync(taskContent);
+        }
+
+        public Task<int> DeleteTaskContentAsync(TaskContentDto taskContent)
+        {
+            return _database.DeleteAsync(taskContent);
+        }
+
+        public Task DeleteAllTaskContentsAsync()
+        {
+            return _database.DeleteAllAsync<TaskContentDto>();
+        }
+
+        // Category methods
+        public Task<List<CategoryDto>> GetCategoriesAsync()
+        {
+            return _database.Table<CategoryDto>().ToListAsync();
+        }
+
+        public Task<int> AddCategoryAsync(CategoryDto category)
+        {
+            return _database.InsertAsync(category);
+        }
+
+        public Task DeleteAllCategoriesAsync()
+        {
+            return _database.DeleteAllAsync<CategoryDto>();
+        }
+
+        // Material methods
+        public Task<List<MaterialDto>> GetMaterialsAsync()
+        {
+            return _database.Table<MaterialDto>().ToListAsync();
+        }
+
+        public Task<int> AddMaterialAsync(MaterialDto material)
+        {
+            return _database.InsertAsync(material);
+        }
+
+        public Task DeleteAllMaterialsAsync()
+        {
+            return _database.DeleteAllAsync<MaterialDto>();
         }
     }
 }

@@ -25,7 +25,7 @@ else
             @fullTask.Title
         </div>
         <div class="card-body">
-            
+
             @if (currentUser.Id == fullTask.AssigningId)
             {
                 <p class="card-text">Assigned by you to @newbieName</p>
@@ -62,20 +62,20 @@ else
                 {
                     <div class="m-2">
                         <MaterialItem materialId=fullTask.MaterialsId
-                                      showRemoveFile="false"
-                                      showDownloadFile="true"
-                                      showAddingFile="false" />
+                        showRemoveFile="false"
+                        showDownloadFile="true"
+                        showAddingFile="false" />
                     </div>
                 }else{
                     <div class="alert alert-warning text-center" role="alert">
                         <i class="bi bi-exclamation-triangle"></i> Materials are avaliable only in online mode
                     </div>
                 }
-                
+
             </div>
         </div>
-        
-        
+
+
     }
     <div class="card">
         <div class="card-header">
@@ -114,8 +114,8 @@ else
                                     </button>
                                 </div>
                             </EditForm>
-                            </div>
-                        }
+                        </div>
+                    }
                 </div>  
             </div>
             <div class="container text-start">
@@ -178,6 +178,12 @@ else
             <button type="button" class="btn btn-danger" @onclick="async() => await DeleteTask()">
                 Delete
             </button>
+        </div>
+    }
+    else if (isOnline && fullTaskId.HasValue)
+    {
+        <div class="d-flex mt-3 mb-3 btn-group ">
+            <button type="button" class="btn btn-info" @onclick="() => NavigateToFeedback(fullTaskId.Value)">Feedback</button>
         </div>
     }
 

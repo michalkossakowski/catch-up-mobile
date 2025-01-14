@@ -1,5 +1,5 @@
 ﻿@page "/"
-
+@inject ILightSensorService LightSensorService
 @inject IJSRuntime JS
 @using catch_up_mobile.SQLite
 @inject CatchUpLocalDb _localDb
@@ -67,16 +67,55 @@
                     </div>
                 </div>
             </div>
-
+            <div class="col-md-3 mb-4">
+                <div class="ratio ratio-16x9">
+                    <iframe src="https://www.youtube.com/embed/4iisysmwB_k?si=jHYrgn5W-7RQrqJv"
+                            title="YouTube video player"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @code {
+    private float lightLevel;
     protected override async Task OnInitializedAsync()
     {
         var fontSize = await _localDb.GetFontSizeAsync();
         if (fontSize != null)
             await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
+        LightSensorService.LightLevelChanged += OnLightLevelChanged;
+        StartSensor();
+    }
+    private void StartSensor()
+    {
+        LightSensorService.Start();
+    }
+    private void OnLightLevelChanged(float level)
+    {
+        lightLevel = level;
+        if (lightLevel > 150)
+        {
+            JS.InvokeVoidAsync("changeTheme", "light");
+        }
+        else
+        {
+            JS.InvokeVoidAsync("changeTheme", "dark");
+        }
+        InvokeAsync(StateHasChanged);
+    }
+    private void StopSensor()
+    {
+        LightSensorService.Stop();
+    }
+
+    public void Dispose()
+    {
+        LightSensorService.LightLevelChanged -= OnLightLevelChanged;
     }
 }

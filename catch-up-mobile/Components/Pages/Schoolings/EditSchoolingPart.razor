@@ -84,7 +84,10 @@
                 editedSchoolingPart.Name = schoolingPartModel.Name;
                 editedSchoolingPart.Content = schoolingPartModel.Content;
                 var response = await _httpClient.PutAsJsonAsync($"api/schooling/EditSchoolingPart", editedSchoolingPart);
-                await Toast.Make("Schooling part successfully edited").Show();
+                if (response.IsSuccessStatusCode)
+                    await Toast.Make("Schooling part successfully edited").Show();
+                else
+                    throw new Exception(response.ReasonPhrase);
             }
             catch (Exception ex)
             {
@@ -100,7 +103,6 @@
                         Name = schoolingPartModel.Name,
                         Content = schoolingPartModel.Content,
                         Materials = new List<MaterialDto>()
-                      
                     };
                 var response = await _httpClient.PostAsJsonAsync($"api/Schooling/AddSchoolingPart/{editedSchoolingId}", schoolingPartDto);
                 if (response.IsSuccessStatusCode)

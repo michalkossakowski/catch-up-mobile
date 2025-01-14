@@ -145,7 +145,6 @@
             {
                 await _httpClient.DeleteAsync($"api/Schooling/ArchiveMaterialFromSchooling/{currentlyEditingPartId}/{materialId}");
             }
-
             part.Materials = part.Materials.Where(m => !selectedMaterialIds.Contains(m.Id)).ToList();
             await Toast.Make("Selected materials removed successfully").Show();
         }
@@ -173,7 +172,6 @@
 
         if (materialsInParts == null)
             materialsInParts = new List<MaterialDto>();
-        
 
         materials = response.Where(m => !materialsInParts.Any(mp => mp.Id == m.Id)).ToList();
         headerString = "Select Materials to add";

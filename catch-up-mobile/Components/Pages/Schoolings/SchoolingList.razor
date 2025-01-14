@@ -171,7 +171,6 @@
     {
         NavigationManager.NavigateTo($"/schooling/edit/");
     }
-
     private void OpenSchoolingEdit(int schoolingId)
     {
         NavigationManager.NavigateTo($"/schooling/edit/{schoolingId}");
@@ -207,7 +206,6 @@
         searchQuery = e.Value?.ToString() ?? string.Empty;
         FilterSchoolings();
     }
-
     private void OnCategoryChanged(ChangeEventArgs e)
     {
         var selectedValue = e.Value?.ToString();
@@ -215,7 +213,6 @@
 
         FilterSchoolings();
     }
-
     private void NavigateToFeedback(int schoolingId)
     {
         try

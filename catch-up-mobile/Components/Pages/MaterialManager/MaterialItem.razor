@@ -137,12 +137,11 @@
 
     private async Task CreateMaterial()
     {
-
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"api/material/Create", materialModal);
             var responseContent = await response.Content.ReadFromJsonAsync<MaterialDto>();
-            if (responseContent != null)
+            if (response.IsSuccessStatusCode && responseContent != null)
             {
                 materialId = responseContent.Id;
                 materialName = responseContent.Name;
@@ -151,6 +150,10 @@
 
                 if (materialId.HasValue)
                     await materialCreated.InvokeAsync(materialId.Value);
+            }
+            else
+            {
+                await Toast.Make("Failed to parse material response").Show();
             }
         }
         catch (Exception ex)
@@ -232,14 +235,7 @@
     }
     private void SetActiveComponent(string? component)
     {
-        if (component == null )
-        {
-            ActiveComponent = null;
-        }
-        else
-        {
-            ActiveComponent = component;
-        }
+        ActiveComponent = component;
     }
 
     private async Task OpenCameraPage()

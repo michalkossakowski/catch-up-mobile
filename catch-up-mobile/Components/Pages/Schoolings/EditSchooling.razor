@@ -64,7 +64,7 @@ else
     public int? editedSchoolingId { get; set; }
 
     private SchoolingDto editedSchooling { get; set; }
-    private List<CategoryDto> categories;
+    private List<CategoryDto> categories { get; set; }
     private SchoolingModel schoolingModel = new SchoolingModel();
 
 
@@ -103,7 +103,10 @@ else
             {
                 schoolingModel.Id = editedSchoolingId;
                 var response = await _httpClient.PutAsJsonAsync($"api/schooling/editSchooling", schoolingModel);
-                await Toast.Make("Schooling successfully edited").Show();
+                if (response.IsSuccessStatusCode)
+                    await Toast.Make("Schooling successfully edited").Show();
+                else
+                    await Toast.Make("Error in editing schooling").Show();
             }
             catch (Exception ex)
             {
@@ -123,9 +126,15 @@ else
                         CreatorId = _localDb.GetUserAsync().Result.Id
                     };
                 var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingDto);
-                var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
-                editedSchoolingId = responseContent.Schooling.Id;
-                await Toast.Make("Schooling successfully added").Show();
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
+                    editedSchoolingId = responseContent.Schooling.Id;
+                    await Toast.Make("Schooling successfully added").Show();
+
+                }
+                else
+                    await Toast.Make($"Error in creating schooling ").Show();
             }
             catch (Exception ex)
             {

@@ -5,7 +5,14 @@
              Title="CameraPage">
     <ScrollView>
         <VerticalStackLayout BackgroundColor="#22272b">
-
+            <ActivityIndicator 
+                x:Name="LoadingIndicator"
+                IsVisible="False"
+                IsRunning="False"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Color="White"
+            />
             <Image 
                 x:Name="CapturedImage"
                 HorizontalOptions="Center"

@@ -24,18 +24,41 @@ public partial class CameraPage : ContentPage
         CapturedImage.IsVisible = false;
     }
 
-    private void CameraView_MediaCaptured(object sender, MediaCapturedEventArgs e)
+    private async void CameraView_MediaCaptured(object sender, MediaCapturedEventArgs e)
     {
-        var memoryStream = new MemoryStream();
-        e.Media.CopyTo(memoryStream);
-        memoryStream.Position = 0;
-        stream = memoryStream; 
-
         Dispatcher.Dispatch(() =>
         {
-            CapturedImage.Source = ImageSource.FromStream(() => new MemoryStream(memoryStream.ToArray()));
+            LoadingIndicator.IsVisible = true;
+            LoadingIndicator.IsRunning = true;
         });
+        try
+        {
+            var memoryStream = new MemoryStream();
+            await e.Media.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            stream = memoryStream;
+
+            Dispatcher.Dispatch(() =>
+            {
+                CapturedImage.Source = ImageSource.FromStream(() => new MemoryStream(memoryStream.ToArray()));
+                CapturedImage.IsVisible = true;
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during MediaCaptured: {ex.Message}");
+        }
+        finally
+        {
+            Dispatcher.Dispatch(() =>
+            {
+                LoadingIndicator.IsVisible = false;
+                LoadingIndicator.IsRunning = false;
+            });
+        }
     }
+
 
     private async void CaptureImage(object sender, EventArgs e)
     {

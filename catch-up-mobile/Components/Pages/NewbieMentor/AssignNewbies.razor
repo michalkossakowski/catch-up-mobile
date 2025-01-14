@@ -82,7 +82,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid MentorId { get; set; }
+        [Parameter] public Guid MentorId { get; set; }
     private List<UserDto> newbies;
     private List<UserDto> sortedNewbies;
     private string sortOrder = "Name";
@@ -102,11 +102,19 @@
         SelectedMentorName = query["name"];
         SelectedMentorSurname = query["surname"];
         SelectedMentorPosition = query["position"];
-
-        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedNewbies/{MentorId}");
-        if (newbies != null)
+        try
         {
+            newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedNewbies/{MentorId}");
+            if (newbies != null)
+            {
+                sortedNewbies = newbies;
+            }
+        }
+        catch (Exception ex)
+        {
+            newbies = new List<UserDto>();
             sortedNewbies = newbies;
+            await Toast.Make("Unable to load newbies. Please check your internet connection.").Show();
         }
     }
 

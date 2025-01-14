@@ -90,14 +90,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllMentors");
-        if (mentors != null && mentors.Count != 0)
+        try
         {
-            foreach (UserDto mentor in mentors)
+            mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllMentors");
+            if (mentors != null && mentors.Count != 0)
             {
-                mentor.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetNewbieCountByMentor/{mentor.Id}");
+                foreach (UserDto mentor in mentors)
+                {
+                    mentor.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetNewbieCountByMentor/{mentor.Id}");
+                }
+                sortedMentors = mentors;
             }
+        }
+        catch (Exception ex)
+        {
+            mentors = new List<UserDto>();
             sortedMentors = mentors;
+            await Toast.Make("Unable to load mentors. Please check your internet connection.").Show();
         }
     }
 

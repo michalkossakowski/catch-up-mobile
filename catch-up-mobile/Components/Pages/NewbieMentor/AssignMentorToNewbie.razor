@@ -86,12 +86,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllNewbies");
-        foreach (UserDto newbie in newbies)
+        try
         {
-            newbie.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetMentorCountByNewbie/{newbie.Id}");
+            newbies = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/NewbieMentor/GetAllNewbies");
+            foreach (UserDto newbie in newbies)
+            {
+                newbie.AssignCount = await _httpClient.GetFromJsonAsync<int>($"api/NewbieMentor/GetMentorCountByNewbie/{newbie.Id}");
+            }
+            sortedNewbies = newbies;
         }
-        sortedNewbies = newbies;
+        catch (Exception ex)
+        {
+            newbies = new List<UserDto>(); 
+            sortedNewbies = newbies;
+            await Toast.Make("Unable to load newbies. Please check your internet connection.").Show();
+        }
     }
 
     private void SortNewbies(string column)

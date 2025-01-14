@@ -92,11 +92,19 @@
         SelectedNewbieName = query["name"];
         SelectedNewbieSurname = query["surname"];
         SelectedNewbiePosition = query["position"];
-
-        mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedMentors/{NewbieId}");
-        if (mentors != null)
+        try
         {
+            mentors = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAllUnassignedMentors/{NewbieId}");
+            if (mentors != null)
+            {
+                sortedMentors = mentors;
+            }
+        }
+        catch (Exception e)
+        {
+            mentors = new List<UserDto>(); 
             sortedMentors = mentors;
+            await Toast.Make("Unable to load mentors. Please check your internet connection.").Show();
         }
     }
 

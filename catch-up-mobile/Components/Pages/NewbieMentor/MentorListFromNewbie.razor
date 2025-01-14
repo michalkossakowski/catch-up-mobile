@@ -117,13 +117,11 @@
 
             sortedMentors = mentors;
         }
-        catch (HttpRequestException httpEx)
+        catch (Exception e)
         {
-            await Toast.Make($"Network error: {httpEx.Message}", CommunityToolkit.Maui.Core.ToastDuration.Long).Show();
-        }
-        catch (Exception ex)
-        {
-            await Toast.Make($"An unexpected error occurred: {ex.Message}", CommunityToolkit.Maui.Core.ToastDuration.Long).Show();
+            mentors = new List<UserDto>();
+            sortedMentors = mentors;
+            await Toast.Make("Unable to load mentors. Please check your internet connection.").Show();
         }
     }
 

@@ -117,6 +117,7 @@
     private bool isCityListExpanded = false;
     private bool isLocalizationAllowed = false;
     private CompanyCityDto newCity = new CompanyCityDto();
+    private CompanySettingsDto companySettings = new CompanySettingsDto();
     private bool isConnectedToApi = true;
     /*
     name  Latitude  Longitude Radius(Km)
@@ -162,10 +163,10 @@
                 responseMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
                 return;
             }
-            string apiEndpoint2 = "api/CompanyCity/GetAllCities";
-            HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint2);
+            string apiEndpoint2 = "api/CompanySettings/GetCompanySettings";
+            HttpResponseMessage responseSettings = await _httpClient.GetAsync(apiEndpoint2);
 
-            if (!response.IsSuccessStatusCode)
+            if (!responseSettings.IsSuccessStatusCode)
             {
                 isConnectedToApi = false;
                 responseMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
@@ -180,9 +181,10 @@
                 responseMessage = "No cities received from API.";
                 return;
             }
+            string jsonSettings = await responseSettings.Content.ReadAsStringAsync();
+            List<CompanySettingsDto> apiSettings = JsonSerializer.Deserialize<List<CompanySettingsDto>>(jsonSettings);
 
             List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
-
             foreach (CompanyCityDto city in apiCities)
             {
                 if (!existingCities.Any(c => c.cityName.Equals(city.cityName, StringComparison.OrdinalIgnoreCase)))

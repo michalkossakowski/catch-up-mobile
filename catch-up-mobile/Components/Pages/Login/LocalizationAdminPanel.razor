@@ -66,6 +66,9 @@
             {
                 <div class="col-12 col-md-6 mx-auto">
                     <h3 class="text-center">Actions</h3>
+                    <button class="btn btn-primary mb-2 w-100" @onclick="ToggleCityList">
+                        @(isLocalizationAllowed ? "Location Based Login Is Enabled" : "Location Login Is Disabled")
+                    </button>
                     <button class="btn btn-primary mb-2 w-100" @onclick="AddCity">Add City</button>
                     <button class="btn btn-danger mb-2 w-100" @onclick="DeleteAllCitiesPop">Delete All Cities</button>
                 </div>
@@ -112,6 +115,7 @@
     private List<CompanyCityDto> cities;
     private string responseMessage = string.Empty;
     private bool isCityListExpanded = false;
+    private bool isLocalizationAllowed = false;
     private CompanyCityDto newCity = new CompanyCityDto();
     private bool isConnectedToApi = true;
     /*
@@ -151,6 +155,15 @@
         {
             string apiEndpoint = "api/CompanyCity/GetAllCities";
             HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                isConnectedToApi = false;
+                responseMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
+                return;
+            }
+            string apiEndpoint2 = "api/CompanyCity/GetAllCities";
+            HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint2);
 
             if (!response.IsSuccessStatusCode)
             {

@@ -66,6 +66,11 @@
             {
                 <div class="col-12 col-md-6 mx-auto">
                     <h3 class="text-center">Actions</h3>
+                    <h4 class="text-center">Localization is @(isLocalizationTurnedOn? "Turned ON" : "Turned OFF")</h4>
+                    <button class="btn btn-warning mb-2 w-100" @onclick="ChangeLocalizationStatement">
+                        @(isLocalizationTurnedOn ? "TURN OFF LOCALIZATION LOGIN" : "TURN ON LOCALIZATION LOGIN")
+                    </button>
+                    <h4 class="text-center">Manage Cities</h4>
                     <button class="btn btn-primary mb-2 w-100" @onclick="AddCity">Add City</button>
                     <button class="btn btn-danger mb-2 w-100" @onclick="DeleteAllCitiesPop">Delete All Cities</button>
                 </div>
@@ -113,7 +118,9 @@
     private string responseMessage = string.Empty;
     private bool isCityListExpanded = false;
     private CompanyCityDto newCity = new CompanyCityDto();
+    private CompanySettingsDto companySettingsDto = new CompanySettingsDto();
     private bool isConnectedToApi = false;
+    private bool isLocalizationTurnedOn;
     /*
     name  Latitude  Longitude Radius(Km)
     { "Warsaw", (52.2297, 21.0122, 15) },
@@ -150,23 +157,38 @@
         {
             string apiEndpoint = "api/CompanyCity/GetAllCities";
             HttpResponseMessage response = await _httpClient.GetAsync(apiEndpoint);
-
             if (!response.IsSuccessStatusCode)
             {
                 isConnectedToApi = false;
                 responseMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
                 return;
             }
-            isConnectedToApi = true;
+            string apiEndpointSettings = "api/CompanySettings/Get";
+            HttpResponseMessage responseSettings = await _httpClient.GetAsync(apiEndpointSettings);
+            if (!responseSettings.IsSuccessStatusCode)
+            {
+                isConnectedToApi = false;
+                responseMessage = $"Failed to fetch cities from API. Status: {responseSettings.StatusCode}";
+                return;
+            }
             string json = await response.Content.ReadAsStringAsync();
             List<CompanyCityDto> apiCities = JsonSerializer.Deserialize<List<CompanyCityDto>>(json);
-
+            string jsonSettings = await responseSettings.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true 
+                };
+            companySettingsDto = JsonSerializer.Deserialize<CompanySettingsDto>(jsonSettings, options);
             if (apiCities == null || !apiCities.Any())
             {
                 responseMessage = "No cities received from API.";
                 return;
             }
-
+            if (companySettingsDto == null)
+            {
+                responseMessage = "No settings received from API.";
+                return;
+            }
             List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
 
             foreach (CompanyCityDto city in apiCities)
@@ -176,8 +198,9 @@
                     await _localDb.AddCityAsync(city);
                 }
             }
-
-            responseMessage = $"Successfully fetched and saved {apiCities.Count} cities from API.";
+            isLocalizationTurnedOn = companySettingsDto.Settings.FirstOrDefault(s => s.Key == "IsLocalizationRestricted").Value;
+            isConnectedToApi = true;
+            responseMessage = $"Successfully fetched and saved {apiCities.Count} cities and settings from API. {isLocalizationTurnedOn}";
         }
         catch (Exception ex)
         {
@@ -314,7 +337,7 @@
         {
             if (isConfirmed)
             {
-               await DeleteAllCities();
+                await DeleteAllCities();
                 StateHasChanged();
             }
             else
@@ -369,4 +392,31 @@
     {
         isCityListExpanded = !isCityListExpanded;
     }
+    private async void ChangeLocalizationStatement()
+    {
+        try
+        {
+            string apiEndpoint = isLocalizationTurnedOn
+                ? "api/CompanySettings/TurnOffLocalization"
+                : "api/CompanySettings/TurnOnLocalization";
+            HttpResponseMessage response = await _httpClient.PatchAsync(apiEndpoint, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isLocalizationTurnedOn = !isLocalizationTurnedOn;
+                responseMessage = $"Localization restriction changed to: {isLocalizationTurnedOn}";
+            }
+            else
+            {
+                responseMessage = $"Failed to change localization. Status: {response.StatusCode}";
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            responseMessage = "Error changing localization: " + ex.Message;
+        }
+    }
+}
+}
 }

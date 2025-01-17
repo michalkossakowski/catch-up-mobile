@@ -163,8 +163,9 @@
                 responseMessage = $"Failed to fetch cities from API. Status: {response.StatusCode}";
                 return;
             }
-            string apiEndpointSettings = "api/CompanySettings/Get";
+            string apiEndpointSettings = "api/CompanySettings/GetWithoutMessage";
             HttpResponseMessage responseSettings = await _httpClient.GetAsync(apiEndpointSettings);
+            responseSettings.Content.ReadFromJsonAsync<CompanySettingsDto>();
             if (!responseSettings.IsSuccessStatusCode)
             {
                 isConnectedToApi = false;

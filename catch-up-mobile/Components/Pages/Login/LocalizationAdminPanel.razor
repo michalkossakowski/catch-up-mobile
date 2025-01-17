@@ -142,7 +142,7 @@
                 responseMessage = "Database service (_localDb) is not available.";
                 return;
             }
-
+            await FetchAndSaveCitiesFromApi();
             cities = await _localDb.GetCitiesAsync();
             responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
         }
@@ -151,7 +151,6 @@
             responseMessage = "Error during page initialization: " + ex.Message;
         }
     }
-
     private async Task FetchAndSaveCitiesFromApi()
     {
         try
@@ -180,6 +179,7 @@
                     PropertyNameCaseInsensitive = true 
                 };
             companySettingsDto = JsonSerializer.Deserialize<CompanySettingsDto>(jsonSettings, options);
+            isConnectedToApi = true;
             if (apiCities == null || !apiCities.Any())
             {
                 responseMessage = "No cities received from API.";
@@ -200,7 +200,6 @@
                 }
             }
             isLocalizationTurnedOn = companySettingsDto.Settings.FirstOrDefault(s => s.Key == "IsLocalizationRestricted").Value;
-            isConnectedToApi = true;
             responseMessage = $"Successfully fetched and saved {apiCities.Count} cities and settings from API. {isLocalizationTurnedOn}";
         }
         catch (Exception ex)
@@ -208,7 +207,6 @@
             responseMessage = "Error fetching cities from API: " + ex.Message;
         }
     }
-
     private async Task GetCityList()
     {
         try
@@ -419,6 +417,4 @@
             responseMessage = "Error changing localization: " + ex.Message;
         }
     }
-}
-}
 }

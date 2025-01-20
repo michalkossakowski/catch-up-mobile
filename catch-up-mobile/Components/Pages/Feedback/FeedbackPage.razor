@@ -13,16 +13,16 @@
     <h3>Feedbacks</h3>
     @if (isLoading)
     {
-            <Loading />
+        <Loading />
     }
     else
     {
-            <div class="accordion text-start mt-3 mb-3" id="accordionExample">
+        <div class="accordion text-start mt-3 mb-3" id="accordionExample">
             @if (!feedbacks.Any())
             {
-                        <div class="alert alert-secondary text-center" role="alert">
-                            No feedbacks found
-                        </div>
+                <div class="alert alert-secondary text-center" role="alert">
+                    No feedbacks found
+                </div>
             }
             else
             {
@@ -31,55 +31,55 @@
                     var feedback = feedbacks[i];
                     var collapseId = $"collapse{i}";
                     var headingId = $"heading{i}";
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="@headingId">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
-                                            <strong>@(i + 1). @feedback.Title</strong>
-                                        </button>
-                                    </h2>
-                                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
-                                        <div class="accordion-body">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="@headingId">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                <strong>@(i + 1). @feedback.Title</strong>
+                            </button>
+                        </h2>
+                        <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
                                 @if (isAdmin)
                                 {
-                                                    <strong>Sender:</strong>
-                                                    <ul><li>@GetUserFullName(feedback.SenderId)</li></ul>
+                                    <strong>Sender:</strong>
+                                    <ul><li>@GetUserFullName(feedback.SenderId)</li></ul>
                                 }
                                 else
                                 {
-                                                    <strong>Receiver:</strong>
-                                                    <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
+                                    <strong>Receiver:</strong>
+                                    <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
                                 }
-                                            <strong>Description:</strong>
-                                            <ul><li>@feedback.Description</li></ul>
+                                <strong>Description:</strong>
+                                <ul><li>@feedback.Description</li></ul>
 
-                                            <strong>Date:</strong>
-                                            <ul><li>@feedback.createdDate.ToString("dd MMM yyyy")</li></ul>
+                                <strong>Date:</strong>
+                                <ul><li>@feedback.createdDate.ToString("dd MMM yyyy")</li></ul>
 
-                                            <strong>Resource type:</strong>
-                                            <ul><li>@feedback.ResourceType</li></ul>
+                                <strong>Resource type:</strong>
+                                <ul><li>@feedback.ResourceType</li></ul>
 
-                                            <strong>Resource title:</strong>
-                                            <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
+                                <strong>Resource title:</strong>
+                                <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
 
                                 @if (isAdmin && !offlineMode)
                                 {
-                                                    <div>
-                                                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => feedbackToDelete = feedback">
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                }
-                                        </div>
+                                    <div>
+                                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" @onclick="() => feedbackToDelete = feedback">
+                                            Delete
+                                        </button>
                                     </div>
-                                </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 }
             }
-            </div>
+        </div>
         @if (offlineMode)
         {
-                    <div class="alert alert-primary" role="alert">
-                        You are working in offline mode
-                    </div>
+            <div class="alert alert-primary" role="alert">
+                You are working in offline mode
+            </div>
         }
     }
 </div>
@@ -153,7 +153,8 @@
             var userRoleResponse = await _httpClient.GetAsync($"api/User/GetRole/{userId}");
             if (userRoleResponse.IsSuccessStatusCode)
             {
-                isAdmin = await userRoleResponse.Content.ReadAsStringAsync() == "Admin";
+                var ResUser = await userRoleResponse.Content.ReadAsStringAsync() == "Newbie";
+                isAdmin = !ResUser;
             }
 
             string endpoint = isAdmin ?

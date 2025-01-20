@@ -126,15 +126,17 @@ else
         }
     }
 
-    private async Task<bool> CheckLocationAccess()
+    private async Task<bool> CheckLocationAccess(Guid userId = default)
     {
         try
         {
             var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
+            var userRoleResponse = await _httpClient.GetAsync($"api/User/GetRole/{userId}");
+            Boolean isAdmin = await userRoleResponse.Content.ReadAsStringAsync() == "Admin";
 
             var result = await companySetting.Content.ReadFromJsonAsync<CompanySettingsResponse>();
             await DbContext.SaveLocalizationSettingAsync(result.settings.settings.IsLocalizationRestricted);
-            if (result.settings.settings.IsLocalizationRestricted)
+            if (result.settings.settings.IsLocalizationRestricted && !isAdmin)
             { 
                 var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
                 string json = await allCitiesResponse.Content.ReadAsStringAsync();
@@ -213,10 +215,6 @@ else
 
         try
         {
-            if (await CheckLocationAccess())
-            {
-                return;
-            }
             var response = await _httpClient.PostAsJsonAsync("api/Auth/Login", loginModel);
 
             if (response.IsSuccessStatusCode)
@@ -224,7 +222,11 @@ else
                 var tokens = await response.Content.ReadFromJsonAsync<TokenResponse>();
                 if (tokens != null)
                 {
-                    await SaveUserAsync(tokens.RefreshToken);
+                    var canProceed = await SaveUserAsync(tokens.RefreshToken);
+                    if (!canProceed)
+                    {
+                        return;
+                    }
                     await OnLoginSuccessful.InvokeAsync();
                 }
                 else
@@ -287,13 +289,19 @@ else
         }
     }
 
-    private async Task SaveUserAsync(string refreshToken)
+    private async Task<bool> SaveUserAsync(string refreshToken)
     {
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(refreshToken);
         var userId = token.Claims.First(c => c.Type == "nameid").Value;
 
         var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
+
+        if (await CheckLocationAccess(userResponse.Id))
+        {
+            return false;
+        }
+
         if (userResponse != null)
         {
             await DbContext.SaveUserAsync(new UserDto
@@ -305,6 +313,7 @@ else
                     Position = userResponse.Position
                 });
         }
+        return true;
     }
 
     private async Task OpenYouTube()

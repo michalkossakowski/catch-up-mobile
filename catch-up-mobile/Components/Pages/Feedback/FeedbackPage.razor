@@ -42,13 +42,13 @@
                                 @if (isAdmin)
                                 {
                                     <strong>Sender:</strong>
-                                    <ul><li>@GetUserFullName(feedback.SenderId)</li></ul>
                                 }
                                 else
                                 {
                                     <strong>Receiver:</strong>
-                                    <ul><li>@GetUserFullName(feedback.ReceiverId)</li></ul>
                                 }
+                                <ul><li>@feedback.UserName</li></ul>
+                                
                                 <strong>Description:</strong>
                                 <ul><li>@feedback.Description</li></ul>
 
@@ -59,7 +59,7 @@
                                 <ul><li>@feedback.ResourceType</li></ul>
 
                                 <strong>Resource title:</strong>
-                                <ul><li>@GetResourceTitle(feedback.ResourceType, feedback.ResourceId)</li></ul>
+                                <ul><li>@feedback.ResourceName</li></ul>
 
                                 @if (isAdmin && !offlineMode)
                                 {
@@ -178,24 +178,6 @@
                 }
             }
 
-            var faqResponse = await _httpClient.GetAsync("api/faq/GetAll");
-            if (faqResponse.IsSuccessStatusCode)
-            {
-                faqs = await faqResponse.Content.ReadFromJsonAsync<List<FaqDto>>();
-            }
-
-            var schoolingResponse = await _httpClient.GetAsync("api/schooling/GetAllFull");
-            if (schoolingResponse.IsSuccessStatusCode)
-            {
-                schoolingsFull = await schoolingResponse.Content.ReadFromJsonAsync<List<FullSchoolingDto>>();
-            }
-
-            var taskResponse = await _httpClient.GetAsync("api/task/GetAllFullTasks");
-            if (taskResponse.IsSuccessStatusCode)
-            {
-                tasks = await taskResponse.Content.ReadFromJsonAsync<List<FullTask>>();
-            }
-
             var userResponse = await _httpClient.GetAsync("api/user/GetAll");
             if (userResponse.IsSuccessStatusCode)
             {
@@ -217,43 +199,12 @@
         if (feedbacks == null)
             feedbacks = new List<FeedbackDto>();
 
-        faqs = await DbContext.GetFaqsAsync();
-        if (faqs == null)
-            faqs = new List<FaqDto>();
-
         var currentUser = await DbContext.GetUserAsync();
         users = currentUser != null ?
             new List<UserDto> { currentUser } :
             new List<UserDto>();
 
         offlineMode = true;
-    }
-
-    private string GetUserFullName(Guid userId)
-    {
-        if (users == null) return "Unknown User";
-        var user = users.FirstOrDefault(u => u.Id == userId);
-        return user != null ? $"{user.Name} {user.Surname}" : "Unknown User";
-    }
-
-    private string GetResourceTitle(ResourceTypeEnum resourceType, int resourceId)
-    {
-        try
-        {
-            return resourceType switch
-            {
-                ResourceTypeEnum.Faq => faqs?.FirstOrDefault(f => f.Id == resourceId)?.Question ?? "No title",
-                ResourceTypeEnum.Schooling => schoolingsFull?
-                    .Select(f => f.Schooling)
-                    .FirstOrDefault(s => s.Id == resourceId)?.Title ?? "No title",
-                ResourceTypeEnum.Task => tasks?.FirstOrDefault(f => f.Id == resourceId)?.Title ?? "No title",
-                _ => "No title"
-            };
-        }
-        catch
-        {
-            return "No title";
-        }
     }
 
     private async Task ConfirmDeleteFeedback()

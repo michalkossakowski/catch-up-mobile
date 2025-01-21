@@ -5,11 +5,10 @@ using Microsoft.Maui.Controls;
 
 namespace catch_up_mobile
 {
-    
     public class LightSensorService : Java.Lang.Object, ILightSensorService, ISensorEventListener
     {
         private readonly SensorManager _sensorManager;
-        private readonly Sensor _lightSensor;
+        private readonly Sensor? _lightSensor;
         public event Action<float>? LightLevelChanged;
 
         public LightSensorService()
@@ -18,31 +17,41 @@ namespace catch_up_mobile
             _lightSensor = _sensorManager.GetDefaultSensor(SensorType.Light);
             if (_lightSensor == null)
             {
-                throw new InvalidOperationException("Device does not have a light sensor.");
+                Console.WriteLine("Device does not have a light sensor. LightSensorService will operate in fallback mode.");
             }
         }
 
         public void Start()
         {
-            _sensorManager.RegisterListener(this, _lightSensor, SensorDelay.Normal);
+            if (_lightSensor != null)
+            {
+                _sensorManager.RegisterListener(this, _lightSensor, SensorDelay.Normal);
+            }
+            else
+            {
+                Console.WriteLine("Light sensor is not available. Start operation skipped.");
+            }
         }
 
         public void Stop()
         {
-            _sensorManager.UnregisterListener(this, _lightSensor);
+            if (_lightSensor != null)
+            {
+                _sensorManager.UnregisterListener(this, _lightSensor);
+            }
         }
 
         public void OnSensorChanged(SensorEvent? e)
         {
             if (e?.Sensor?.Type == SensorType.Light)
             {
-                LightLevelChanged?.Invoke(e.Values[0]); // Przekazuje poziom natężenia światła
+                LightLevelChanged?.Invoke(e.Values[0]); // Passes the light intensity level
             }
         }
 
         public void OnAccuracyChanged(Sensor? sensor, SensorStatus accuracy)
         {
-            // Możesz obsłużyć zmianę dokładności sensora tutaj
+            // Handle changes in sensor accuracy here if necessary
         }
     }
 }

@@ -14,7 +14,9 @@ namespace catch_up_mobile.Dtos
         [PrimaryKey]
         public int Id { get; set; }
         public Guid? NewbieId { get; set; }
+        public string? NewbieName { get; set; }
         public Guid? AssigningId { get; set; }
+        public string? AssigningName { get; set; }
         public int? MaterialsId { get; set; }
         public int? CategoryId { get; set; }
         public string Title { get; set; }

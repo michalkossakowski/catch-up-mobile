@@ -28,14 +28,14 @@ else
 
             @if (currentUser.Id == fullTask.AssigningId)
             {
-                <p class="card-text">Assigned by you to @newbieName</p>
+                <p class="card-text">Assigned by you to @fullTask.NewbieName</p>
             }
             else if (currentUser.Id == fullTask.NewbieId)
             {
-                <p class="card-text">Assigned by @mentorName to you</p>
+                <p class="card-text">Assigned by @fullTask.AssigningName to you</p>
             }else
             {
-                <p class="card-text">Assigned by @mentorName to @newbieName;}</p>
+                <p class="card-text">Assigned by @fullTask.AssigningName to @fullTask.NewbieName</p>
             }
         </div>
     </div>
@@ -208,8 +208,8 @@ else
     private UserDto currentUser;
     private List<CategoryDto> categories = new List<CategoryDto>();
 
-    private string newbieName;
-    private string mentorName;
+    //private string newbieName;
+    //private string mentorName;
     [Required]
     [Range(0.01, double.MaxValue, ErrorMessage = "Value must be greater than 0.")]
     private double spendTime;
@@ -236,37 +236,11 @@ else
         }
         finally
         {
-            newbieName = await GetUserName(fullTask.NewbieId);
-            mentorName = await GetUserName(fullTask.AssigningId);
             isLoading = false;
         }
 
     }
-    private async Task<string> GetUserName(Guid? userId)
-    {
-
-        try
-        {
-            var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
-            UserName userName = new UserName((Guid)userId, user.Name, user.Surname);
-            var response = await DbContext.UpdateUserNameAsync(userName);
-            if (response == 0)
-            {
-                await DbContext.AddUserNameAsync(userName);
-            }
-            return $"{user.Name} {user.Surname}";
-        }
-        catch (HttpRequestException ex)
-        {
-            var userName = await DbContext.GetUserNameAsync((Guid)userId);
-            if (userName == null)
-            {
-                return "Unknown";
-            }
-            return $"{userName.Name} {userName.Surname}";
-        }
-
-    }
+  
     private async Task AddTime()
     {
         FullTask newFullTask = fullTask;
@@ -304,7 +278,7 @@ else
         newFullTask.Status = status;
         if (status == StatusEnum.Done)
             newFullTask.FinalizationDate = DateTime.Now;
-        var response = await _httpClient.PutAsJsonAsync($"api/Task/EditFullTask/{fullTaskId}/{currentUser.Id}", newFullTask);
+        var response = await _httpClient.PatchAsJsonAsync($"api/Task/SetStatus/{fullTaskId}/{(int)status}", new{});
         if (response.IsSuccessStatusCode)
         {
             fullTask = newFullTask;

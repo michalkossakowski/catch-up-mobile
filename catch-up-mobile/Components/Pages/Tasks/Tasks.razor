@@ -66,7 +66,7 @@ else
                 <div class="card">
                     <div class="card-body" @onclick="() => GoToDedails(card.FullTask.Id)">
                         <h5 class="card-title">@card.FullTask.Title</h5>
-                        <p class="card-text">@card.Name</p>
+                        <p class="card-text">@card.FullTask.NewbieName</p>
                     </div>
                     <div class="card-footer">
                         @(getStatus(card.FullTask.Status))
@@ -144,7 +144,7 @@ else
             {
                 Card newCard = new Card();
                 newCard.FullTask = fullTask;
-                newCard.Name = await GetNewbieName(fullTask.NewbieId);
+                newCard.Name = fullTask.NewbieName;
                 cards.Add(newCard);
             }
             filteredCards = cards;
@@ -165,7 +165,7 @@ else
 
             Card newCard = new Card();
             newCard.FullTask = fullTask;
-            newCard.Name = await GetNewbieName(fullTask.NewbieId);
+            newCard.Name = fullTask.NewbieName;
             cards.Add(newCard);
 
         }
@@ -175,31 +175,6 @@ else
         isLoading = false;
     }
 
-    private async Task<string> GetNewbieName(Guid? newbieId)
-    {
-
-        try
-        {
-            var user = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{newbieId}");
-            UserName userName = new UserName((Guid)newbieId, user.Name, user.Surname);
-            var response = await DbContext.UpdateUserNameAsync(userName);
-            if (response == 0)
-            {
-                await DbContext.AddUserNameAsync(userName);
-            }
-            return $"{user.Name} {user.Surname}";
-        }
-        catch (HttpRequestException ex)
-        {
-            var userName = await DbContext.GetUserNameAsync((Guid)newbieId);
-            if (userName == null)
-            {
-                return "Unknown";
-            }
-            return $"{userName.Name} {userName.Surname}";
-        }
-
-    }
     private void GoToDedails(int fullTaskId)
     {
         NavigationManager.NavigateTo($"/tasks/details/{fullTaskId}");

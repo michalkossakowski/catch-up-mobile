@@ -32,11 +32,14 @@
                 <i class="bi-list-task fs-5" aria-hidden="true"></i> Task Content
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="assigntask">
-                <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> Assign Task
-            </NavLink>
-        </div>
+        @if (!(userPosition == "Newbie"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="assigntask">
+                    <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> Assign Task
+                </NavLink>
+            </div>
+        }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="tasks">
                 <i class="bi-person-lines-fill fs-5" aria-hidden="true"></i> Tasks

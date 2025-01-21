@@ -2,6 +2,7 @@
 
 @using CommunityToolkit.Maui.Alerts
 @using CommunityToolkit.Maui.Storage
+@using Plugin.LocalNotification;
 
 @inject HttpClient _httpClient
 
@@ -90,9 +91,25 @@
                 var fileSaverResult = await FileSaver.SaveAsync(fileName, stream);
 
                 if (fileSaverResult.IsSuccessful)
+                {
                     await Toast.Make($"The file was saved successfully to: {fileSaverResult.FilePath}").Show();
+                    if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+                    {
+                        await LocalNotificationCenter.Current.RequestNotificationPermission();
+                    }
+                    var notification = new NotificationRequest
+                        {
+                            Title = "Download Complete",
+                            Description = $"File {fileName} downloaded successfully.",
+                            ReturningData = fileSaverResult.FilePath,
+                            NotificationId = fileId
+                        };
+                    await LocalNotificationCenter.Current.Show(notification);
+                }
                 else
+                {
                     await Toast.Make($"The file was not saved successfully. Error: {fileSaverResult.Exception.Message}").Show();
+                }
             }
             else
                 await Toast.Make($"Failed to download the file. Server returned: {response.StatusCode}").Show();

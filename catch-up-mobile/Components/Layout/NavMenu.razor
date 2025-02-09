@@ -7,7 +7,7 @@
 @using catch_up_mobile.Dtos
 
 <div class="top-row navbar navbar-dark">
-    <div class="container-fluid">
+    <div class="container-fluid navbar-box">
         <a class="navbar-brand" href="/">catchUp</a>
         <b class="navbar-username">@userName</b>
     </div>
@@ -19,76 +19,76 @@
     <nav class="flex-column nav-items-box">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <i class="bi-house-door-fill fs-5" aria-hidden="true"></i> Home
+                <i class="bi-house-door-fill fs-5" aria-hidden="true"></i> <span>Home</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="faq">
-                <i class="bi-question-circle fs-5" aria-hidden="true"></i> FAQ
+                <i class="bi-question-circle fs-5" aria-hidden="true"></i> <span>FAQ</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="taskcontent">
-                <i class="bi-list-task fs-5" aria-hidden="true"></i> Task Content
+                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>Task Content</span> 
             </NavLink>
         </div>
         @if (!(userPosition == "Newbie"))
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="assigntask">
-                    <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> Assign Task
+                    <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> <span>Assign Task</span> 
                 </NavLink>
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="tasks">
-                <i class="bi-person-lines-fill fs-5" aria-hidden="true"></i> Tasks
+                <i class="bi-person-lines-fill fs-5" aria-hidden="true"></i> <span>Tasks</span> 
             </NavLink>
         </div>
         @if (userPosition == "Admin" || userPosition == "HR")
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="assignment">
-                    <i class="bi-link fs-5" aria-hidden="true"></i> Assignment
+                    <i class="bi-link fs-5" aria-hidden="true"></i> <span>Assignment</span> 
                 </NavLink>
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="addmaterial">
-                <i class="bi-journal-plus fs-5" aria-hidden="true"></i> Add Material
+                <i class="bi-journal-plus fs-5" aria-hidden="true"></i> <span>Add Material</span> 
             </NavLink> 
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="schoolingList">
-                <i class="bi-book fs-5" aria-hidden="true"></i> Schoolings
+                <i class="bi-book fs-5" aria-hidden="true"></i> <span>Schoolings</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="feedback">
-                <i class="bi-pencil-square fs-5" aria-hidden="true"></i> Feedbacks
+                <i class="bi-pencil-square fs-5" aria-hidden="true"></i> <span>Feedbacks</span> 
             </NavLink>
         </div>
         @if (userPosition == "Admin")
         {        
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="localization-panel-admin">
-                    <i class="bi-geo-alt-fill fs-5" aria-hidden="true"></i> Localization Panel
+                    <i class="bi-geo-alt-fill fs-5" aria-hidden="true"></i> <span>Localization Panel</span> 
                 </NavLink>
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="newbies">
-                <i class="bi-list-task fs-5" aria-hidden="true"></i> Newbies List
+                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>Newbies List</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
-                <i class="bi-gear fs-5" aria-hidden="true"></i> Settings
+                <i class="bi-gear fs-5" aria-hidden="true"></i> <span>Settings</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" @onclick="HandleLogout">
-                <i class="bi-box-arrow-right fs-5" aria-hidden="true"></i> Logout
+                <i class="bi-box-arrow-right fs-5" aria-hidden="true"></i> <span>Logout</span> 
             </NavLink>
         </div>
     </nav>

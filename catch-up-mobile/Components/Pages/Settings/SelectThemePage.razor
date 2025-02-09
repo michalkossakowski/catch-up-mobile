@@ -1,0 +1,38 @@
+@inject IJSRuntime JS
+
+
+
+<div class="text-center">
+    <h3>Set Theme Mode:</h3>
+    <button @onclick="ToggleTheme" class="btn btn-primary">
+        @themeButtonText
+    </button>
+</div>
+
+
+
+
+@code {
+    private bool isDarkMode = false;
+    private string themeButtonText = "Dark Mode";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+        if (savedTheme == "catchUpNight")
+        {
+            isDarkMode = true;
+            themeButtonText = "Light Mode";
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        themeButtonText = isDarkMode ? "Light Mode" : "Night Mode";
+
+        string newTheme = isDarkMode ? "catchUpNight" : "catchUpDay";
+
+        await JS.InvokeVoidAsync("changeTheme", newTheme);
+    }
+}

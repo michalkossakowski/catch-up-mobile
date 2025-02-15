@@ -54,12 +54,6 @@ else
                     {
                         <button class="btn btn-primary btn-lg w-100 mt-4" @onclick="AuthenticateUser">Login with fingerprint</button>
                     }
-
-                    <button class="btn btn-danger btn-lg w-100 mt-4"
-                            @onclick="OpenYouTube">
-                        <i class="bi bi-youtube"></i>
-                        Open YouTube
-                    </button>
                 </div>
             </div>
         </div>
@@ -315,18 +309,6 @@ else
                 });
         }
         return true;
-    }
-
-    private async Task OpenYouTube()
-    {
-        try
-        {
-            await Launcher.OpenAsync("https://www.youtube.com/watch?v=Jq3JHE3OE3c");
-        }
-        catch (Exception ex)
-        {
-            errorMessage = "Failed to open YouTube: " + ex.Message;
-        }
     }
 
     private class CompanySettingsResponse

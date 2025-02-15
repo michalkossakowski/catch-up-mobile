@@ -90,11 +90,11 @@
         lightLevel = level;
         if (lightLevel > 150)
         {
-            JS.InvokeVoidAsync("changeTheme", "light");
+            JS.InvokeVoidAsync("changeTheme", "catchUpDay");
         }
         else
         {
-            JS.InvokeVoidAsync("changeTheme", "dark");
+            JS.InvokeVoidAsync("changeTheme", "catchUpNight");
         }
         InvokeAsync(StateHasChanged);
     }

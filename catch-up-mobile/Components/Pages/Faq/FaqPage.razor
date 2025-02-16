@@ -154,25 +154,29 @@
 
             var response = await _httpClient.GetAsync("api/faq/GetAll", HttpCompletionOption.ResponseHeadersRead);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                faqs = new List<FaqDto>();
-            }
-            else if (response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
                 faqs = await response.Content.ReadFromJsonAsync<List<FaqDto>>();
                 await _localDb.DeleteAllFaqsAsync();
                 foreach (var faq in faqs)
                     await _localDb.AddFaqAsync(faq);
+                offlineMode = false;
             }
-
-            offlineMode = false;
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                faqs = new List<FaqDto>();
+            }
+            else
+            {
+                throw new HttpRequestException("server offline");
+            }
         }
         catch (HttpRequestException ex)
         {
             faqs = await _localDb.GetFaqsAsync();
             offlineMode = true;
         }
+
         filteredFaqs = faqs;
     }
 

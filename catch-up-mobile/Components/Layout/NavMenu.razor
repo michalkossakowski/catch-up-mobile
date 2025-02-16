@@ -100,9 +100,17 @@
     protected override async Task OnInitializedAsync()
     {
         UserDto user = await DbContext.GetUserAsync();
-        var response = await _httpClient.GetAsync($"api/User/GetRole/{user.Id}");
-        userPosition = await response.Content.ReadAsStringAsync();
         userName = $"{user.Name} {user.Surname}";
+
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/User/GetRole/{user.Id}");
+            userPosition = await response.Content.ReadAsStringAsync();
+        }
+        catch(Exception ex)
+        {
+            userPosition = "Offline";
+        }
     }
 
 

@@ -45,6 +45,10 @@ yellow
     width: 1px;
 }
 
+.bottom-panel .nav-link div{
+    font-size: 12px !important;
+}
+
 .bottom-panel .nav-link.active,
 .bottom-panel .nav-link:hover,
 .bottom-panel .nav-link.active > i,

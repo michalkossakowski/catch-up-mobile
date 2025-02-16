@@ -1,20 +1,19 @@
 @inject IJSRuntime JS
 
-
-
-<div class="text-center">
-    <h3>Set Theme Mode:</h3>
-    <button @onclick="ToggleTheme" class="btn btn-primary">
-        @themeButtonText
-    </button>
+<div class="theme-settings">
+    <h3>Theme:</h3>
+    <div class="setting-row">
+        <div class="setting-name">
+            DARK MODE
+        </div>
+        <div class="form-check form-switch setting-switch">
+            <input class="form-check-input" type="checkbox" id="themeSwitch" @bind="isDarkMode" @bind:event="oninput" @onchange="ToggleTheme">
+        </div>
+    </div>
 </div>
-
-
-
 
 @code {
     private bool isDarkMode = false;
-    private string themeButtonText = "Dark Mode";
 
     protected override async Task OnInitializedAsync()
     {
@@ -22,17 +21,12 @@
         if (savedTheme == "catchUpNight")
         {
             isDarkMode = true;
-            themeButtonText = "Light Mode";
         }
     }
 
     private async Task ToggleTheme()
     {
-        isDarkMode = !isDarkMode;
-        themeButtonText = isDarkMode ? "Light Mode" : "Night Mode";
-
         string newTheme = isDarkMode ? "catchUpNight" : "catchUpDay";
-
         await JS.InvokeVoidAsync("changeTheme", newTheme);
     }
 }

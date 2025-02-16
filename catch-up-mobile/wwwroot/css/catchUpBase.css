@@ -339,3 +339,59 @@ i {
     box-shadow: var(--bs-toast-box-shadow);
     border-radius: var(--bs-toast-border-radius);
 }
+
+/* Settings */
+.theme-settings {
+    text-align: left !important;
+}
+
+.font-settings {
+    text-align: left !important;
+}
+
+
+.setting-row {
+    display: flex;
+    text-align: center;
+    justify-content: space-between;
+    align-items: center;
+    border-top: solid 1px gray;
+    border-bottom: solid 1px gray;
+    padding: 10px;
+}
+.setting-name {
+    font-weight: bold;
+    font-size: 18px !important;
+}
+
+.setting-switch {
+    width: 3rem !important;
+    text-align: right !important;
+}
+
+.setting-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    font-size: 18px !important;
+}
+
+.form-check-input:focus {
+    border-color: red !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 47, 69, 0.25) !important;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0,0,0,0.25)'/></svg>") !important;
+}
+
+.form-check-input:checked {
+    border-color: #DB91D1 !important;
+    background-color: #DB91D1 !important;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1.0)'/></svg>") !important;
+}
+
+.form-check-input:active {
+    background-color: #DB91D1 !important;
+    border-color: #DB91D1 !important;
+}
+
+.form-check-input:focus:not(:checked) {
+    border-color: #DB91D1 !important;
+}

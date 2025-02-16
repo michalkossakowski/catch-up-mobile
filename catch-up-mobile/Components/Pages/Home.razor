@@ -78,7 +78,11 @@
         var fontSize = await _localDb.GetFontSizeAsync();
         if (fontSize != null)
             await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
-        LightSensorService.LightLevelChanged += OnLightLevelChanged;
+        //WERYK DODAJ SWITCHA W SETTINGACH KTÓRY WŁ/WYŁ NASŁUCHIWANIE CZUJNIKA ŚWIATŁA
+        //MOŻESZ GO NAZAWAĆ AUTO THEME
+        //JEŚLI ON - AUTOMATYCZNY MOTYW (DRUGI SWITCH "DARK MODE" WTEDY JEST UKRYTY)
+        //JEŚLI OFF - UŻYTKOWNIK WYBIERA MOTYW SWITCHEM "DARK MODE"
+        //LightSensorService.LightLevelChanged += OnLightLevelChanged;
         StartSensor();
     }
     private void StartSensor()

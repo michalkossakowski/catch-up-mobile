@@ -32,7 +32,7 @@
         <label for="description" class="form-label">Description</label>
         <InputTextArea id="description" class="form-control" @bind-Value="newTaskContent.Description" />
     </div>
-
+ 
     <div class="mb-3">
         <label for="category" class="form-label">Category</label>
         <InputSelect id="category" class="form-control" @bind-Value="newTaskContent.CategoryId">
@@ -150,9 +150,10 @@ else
     private IAccelerometer? accelerometer;
     private bool isAccelerometerReady;
     private DateTime lastShakeTime = DateTime.MinValue;
-    private const double ShakeThreshold = 1.3;
+    private const double ShakeThreshold = 2.0;
     private const int ShakeCooldownMs = 1000;
     private bool offlineMode = false;
+    private bool isApplicationActive = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,6 +219,8 @@ else
 
     private async void Accelerometer_ReadingChanged(object sender, AccelerometerChangedEventArgs e)
     {
+        if (!isApplicationActive) return;
+        
         var reading = e.Reading;
         var acceleration = Math.Sqrt(
             reading.Acceleration.X * reading.Acceleration.X +
@@ -234,10 +237,17 @@ else
                 taskContents = null;
                 StateHasChanged(); 
                 await Task.Delay(100);
-                await LoadTaskContents();
+                await LoadTaskContents(showNotification: true);
                 StateHasChanged();
             });
         }
+    }
+
+    // Lifecycle methods
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        isApplicationActive = true;
     }
 
     public void Dispose()
@@ -249,7 +259,7 @@ else
         }
     }
 
-    private async Task LoadTaskContents()
+    private async Task LoadTaskContents(bool showNotification = false)
     {
         try
         {
@@ -267,19 +277,22 @@ else
 
             offlineMode = false;
 
-            if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+            if (showNotification)
             {
-                await LocalNotificationCenter.Current.RequestNotificationPermission();
-            }
+                if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+                {
+                    await LocalNotificationCenter.Current.RequestNotificationPermission();
+                }
 
-            var notification = new NotificationRequest
-            {
-                Title = "Task List Refresh",
-                Description = "Task list has been refreshed successfully",
-                ReturningData = "TaskListRefresh",
-                NotificationId = 1
-            };
-            await LocalNotificationCenter.Current.Show(notification);
+                var notification = new NotificationRequest
+                {
+                    Title = "Task List Refresh",
+                    Description = "Task list has been refreshed successfully",
+                    ReturningData = "TaskListRefresh",
+                    NotificationId = 1
+                };
+                await LocalNotificationCenter.Current.Show(notification);
+            }
         }
         catch (HttpRequestException)
         {
@@ -300,7 +313,7 @@ else
             if (result.IsSuccessStatusCode)
             {
                 newTaskContent = new TaskContentDto();
-                await LoadTaskContents();
+                await LoadTaskContents(showNotification: false);
             }
             else
             {

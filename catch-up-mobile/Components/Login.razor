@@ -133,14 +133,16 @@ else
     {
         try
         {
-            #if WINDOWS
-            var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
-            if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
-            {
-                errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
-                return true;
-            }
-            #endif
+            // krzyś nawalił jazzy nie prosi o uprawnienia tylko 
+            // wy*ierdala trzba grzebać w settingach windowsa żeby dać uprawnienia
+            // #if WINDOWS
+            // var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
+            // if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
+            // {
+            //     errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
+            //     return true;
+            // }
+            // #endif
 
             var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
             var userRoleResponse = await _httpClient.GetAsync($"api/User/GetRole/{userId}");

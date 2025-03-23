@@ -79,7 +79,15 @@ else
     protected override async Task OnInitializedAsync()
     {
         var user = await DbContext.GetUserAsync();
-        var available = await CrossFingerprint.Current.IsAvailableAsync();
+        bool available = false;
+
+        if (DeviceInfo.Platform == DevicePlatform.Android || DeviceInfo.Platform == DevicePlatform.iOS) {
+            available = await CrossFingerprint.Current.IsAvailableAsync();
+        }
+        else {
+            available = false;
+        }
+
         isAuthenticated = user != null && available;
         if (isAuthenticated)
         {
@@ -125,6 +133,15 @@ else
     {
         try
         {
+            #if WINDOWS
+            var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
+            if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
+            {
+                errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
+                return true;
+            }
+            #endif
+
             var companySetting = await _httpClient.GetAsync("api/CompanySettings/Get");
             var userRoleResponse = await _httpClient.GetAsync($"api/User/GetRole/{userId}");
             Boolean isAdmin = await userRoleResponse.Content.ReadAsStringAsync() == "Admin";

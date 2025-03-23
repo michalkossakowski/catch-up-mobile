@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject ILightSensorService LightSensorService
+@inject IServiceProvider ServiceProvider
 @inject IJSRuntime JS
 @using catch_up_mobile.SQLite
 @inject CatchUpLocalDb _localDb
@@ -11,11 +11,10 @@
 <div>
     <div class="container mt-4">
         <div class="row">
-
             <!-- Tasks Card -->
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <img src="images/task-batman-image.jpg" class="card-img-top" alt="Tasks Image"/>
+                    <img src="images/task-batman-image.jpg" class="card-img-top" alt="Tasks Image" />
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-list-task fs-4"></i> Tasks
@@ -29,7 +28,7 @@
             <!-- Schoolings Card -->
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <img src="images/schooling-batman-image.jpg" class="card-img-top" alt="Schoolings Image"/>
+                    <img src="images/schooling-batman-image.jpg" class="card-img-top" alt="Schoolings Image" />
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-book fs-4"></i> Schoolings
@@ -43,7 +42,7 @@
             <!-- Feedbacks Card -->
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <img src="images/feedback-batman-image.jpg" class="card-img-top" alt="Feedbacks Image"/>
+                    <img src="images/feedback-batman-image.jpg" class="card-img-top" alt="Feedbacks Image" />
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-pencil-square fs-4"></i> Feedbacks
@@ -57,7 +56,7 @@
             <!-- FAQ Card -->
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <img src="images/faq-batman-image.jpg" class="card-img-top" alt="FAQ Image"/>
+                    <img src="images/faq-batman-image.jpg" class="card-img-top" alt="FAQ Image" />
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-question-circle fs-4"></i> FAQ
@@ -73,22 +72,38 @@
 
 @code {
     private float lightLevel;
+    private ILightSensorService? lightSensorService;
+
     protected override async Task OnInitializedAsync()
     {
         var fontSize = await _localDb.GetFontSizeAsync();
         if (fontSize != null)
             await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
+
         //WERYK DODAJ SWITCHA W SETTINGACH KTÓRY WŁ/WYŁ NASŁUCHIWANIE CZUJNIKA ŚWIATŁA
         //MOŻESZ GO NAZAWAĆ AUTO THEME
         //JEŚLI ON - AUTOMATYCZNY MOTYW (DRUGI SWITCH "DARK MODE" WTEDY JEST UKRYTY)
         //JEŚLI OFF - UŻYTKOWNIK WYBIERA MOTYW SWITCHEM "DARK MODE"
-        //LightSensorService.LightLevelChanged += OnLightLevelChanged;
-        StartSensor();
+
+        // if (DeviceInfo.Platform == DevicePlatform.Android)
+        // {
+        //     lightSensorService = ServiceProvider.GetService<ILightSensorService>();
+        //     if (lightSensorService != null)
+        //     {
+        //         lightSensorService.LightLevelChanged += OnLightLevelChanged;
+        //         StartSensor();
+        //     }
+        // }
     }
+
     private void StartSensor()
     {
-        LightSensorService.Start();
+        if (DeviceInfo.Platform == DevicePlatform.Android && lightSensorService != null)
+        {
+            lightSensorService.Start();
+        }
     }
+
     private void OnLightLevelChanged(float level)
     {
         lightLevel = level;
@@ -102,13 +117,20 @@
         }
         InvokeAsync(StateHasChanged);
     }
+
     private void StopSensor()
     {
-        LightSensorService.Stop();
+        if (DeviceInfo.Platform == DevicePlatform.Android && lightSensorService != null)
+        {
+            lightSensorService.Stop();
+        }
     }
 
     public void Dispose()
     {
-        LightSensorService.LightLevelChanged -= OnLightLevelChanged;
+        if (DeviceInfo.Platform == DevicePlatform.Android && lightSensorService != null)
+        {
+            lightSensorService.LightLevelChanged -= OnLightLevelChanged;
+        }
     }
 }

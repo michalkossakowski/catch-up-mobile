@@ -142,12 +142,12 @@ else
             if (result.settings.settings.IsLocalizationRestricted && !isAdmin)
             { 
                 #if WINDOWS
-                var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
-                if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
-                {
-                    errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
-                    return true;
-                }
+            var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
+            if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
+            {
+                errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
+                return true;
+            }
                 #endif
                 var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
                 string json = await allCitiesResponse.Content.ReadAsStringAsync();
@@ -306,6 +306,7 @@ else
         var token = handler.ReadJwtToken(tokens.RefreshToken);
         var userId = token.Claims.First(c => c.Type == "nameid").Value;
 
+        JwtTokens.HttpClient = _httpClient;
         JwtTokens.SetTokens(tokens.AccessToken, tokens.RefreshToken);
 
         var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");

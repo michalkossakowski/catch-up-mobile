@@ -152,10 +152,13 @@ yellow
     }
 
     .nav-scrollable {
-        /* Never collapse the sidebar for wide screens */
         display: block;
-        /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
+        height: 100vh;
+    }
+
+    .nav-items-box {
+        max-height: none;
+        height: calc(100% - 6rem - 3.5rem);
         overflow-y: auto;
     }
 }

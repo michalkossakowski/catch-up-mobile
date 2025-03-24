@@ -37,7 +37,7 @@ yellow
 .bottom-panel {
     padding: 10px 0px;
     font-weight: bold;
-    max-height: 20vw;
+    height: 6rem;
     border-top: 1px solid #DB91D1;
 }
 

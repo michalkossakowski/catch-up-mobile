@@ -6,7 +6,13 @@ using catch_up_mobile.SQLite;
 using Plugin.Fingerprint;
 using Plugin.LocalNotification;
 using catch_up_mobile.Components;
-
+using Plugin.Firebase.CloudMessaging;
+using Microsoft.Maui.LifecycleEvents;
+#if IOS
+using Plugin.Firebase.Core.Platforms.iOS;
+#elif ANDROID
+using Plugin.Firebase.Core.Platforms.Android;
+#endif
 
 namespace catch_up_mobile
 {
@@ -63,6 +69,23 @@ namespace catch_up_mobile
 
             #endif
             return builder.Build();
+        }
+        private static MauiAppBuilder RegisterFirebaseServices(this MauiAppBuilder builder)
+        {
+            builder.ConfigureLifecycleEvents(events => {
+#if IOS
+        events.AddiOS(iOS => iOS.WillFinishLaunching((_, __) => {
+            CrossFirebase.Initialize();
+            FirebaseCloudMessagingImplementation.Initialize();
+            return false;
+        }));
+#elif ANDROID
+        events.AddAndroid(android => android.OnCreate((activity, _) =>
+        CrossFirebase.Initialize(activity)));
+#endif
+            });
+
+            return builder;
         }
     }
 }

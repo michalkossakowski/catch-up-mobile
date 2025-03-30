@@ -1,13 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.unhandledexception.catchupmobile">
-	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:supportsRtl="true" android:label="catchupmobile">
-		<receiver
-			android:name="com.google.firebase.iid.FirebaseInstanceIdInternalReceiver"
-			android:exported="false" />
-		<receiver
-			android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
-			android:exported="true"
-			android:permission="com.google.android.c2dm.permission.SEND">
+	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:supportsRtl="true" android:label="catchUp">
+		<receiver android:name="com.google.firebase.iid.FirebaseInstanceIdInternalReceiver" android:exported="false" />
+		<receiver android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver" android:exported="true" android:permission="com.google.android.c2dm.permission.SEND">
 			<intent-filter>
 				<action android:name="com.google.android.c2dm.intent.RECEIVE" />
 				<action android:name="com.google.android.c2dm.intent.REGISTRATION" />

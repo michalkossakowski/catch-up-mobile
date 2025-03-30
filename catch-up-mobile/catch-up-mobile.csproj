@@ -104,8 +104,12 @@
 		</MauiXaml>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0-android'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
 		<GoogleServicesJson Include="google-services.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="secrets.json" />
 	</ItemGroup>
 
 </Project>

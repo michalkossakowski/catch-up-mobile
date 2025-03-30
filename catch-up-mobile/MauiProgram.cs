@@ -3,14 +3,14 @@ using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
 using catch_up_mobile.SQLite;
-using Plugin.Fingerprint;
 using Plugin.LocalNotification;
-using catch_up_mobile.Components;
-using Plugin.Firebase.CloudMessaging;
 using Microsoft.Maui.LifecycleEvents;
-#if IOS
-using Plugin.Firebase.Core.Platforms.iOS;
-#elif ANDROID
+using Microsoft.Extensions.Configuration;
+using System.Reflection;
+
+#if ANDROID
+using Plugin.Fingerprint;
+using catch_up_mobile.Components;
 using Plugin.Firebase.Core.Platforms.Android;
 #endif
 
@@ -21,6 +21,14 @@ namespace catch_up_mobile
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+           
+            using var secretsStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("catch_up_mobile.secrets.json");
+            if (secretsStream == null)
+            {
+                throw new FileNotFoundException("Embedded resource 'secrets.json' not found.");
+            }
+            builder.Configuration.AddJsonStream(secretsStream);
+
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkitCamera()
@@ -39,14 +47,22 @@ namespace catch_up_mobile
     		builder.Logging.AddDebug();
 #endif
             //----------- Custom Section Start -----------
-            // Konfiguracja HttpClient z ignorowaniem błędów certyfikatu SSL
-            var httpClientHandler = new HttpClientHandler
+
+            // HttpClient with ignoring SSL
+            builder.Services.AddSingleton(sp =>
             {
-                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-            };
-            builder.Services.AddSingleton(sp => new HttpClient(httpClientHandler)
-            {
-                BaseAddress = new Uri("https://localhost:7097/")
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var baseAddress = configuration["ApiSettings:Url"];
+
+                var httpClientHandler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+                };
+
+                return new HttpClient(httpClientHandler)
+                {
+                    BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("API Url not found in configuration"))
+                };
             });
 
             //Record Audio
@@ -60,28 +76,21 @@ namespace catch_up_mobile
 
             // Biometric Auth
             builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();
-            
+
+#if ANDROID
+            CrossFingerprint.SetCurrentActivityResolver(() => Platform.CurrentActivity);
+            builder.Services.AddSingleton<ILightSensorService, LightSensorService>();
+#endif
 
             // ----------- Custom Section End -----------
-            #if ANDROID
-             CrossFingerprint.SetCurrentActivityResolver(() => Platform.CurrentActivity);
-            builder.Services.AddSingleton<ILightSensorService, LightSensorService>();
-
-            #endif
             return builder.Build();
         }
         private static MauiAppBuilder RegisterFirebaseServices(this MauiAppBuilder builder)
         {
             builder.ConfigureLifecycleEvents(events => {
-#if IOS
-        events.AddiOS(iOS => iOS.WillFinishLaunching((_, __) => {
-            CrossFirebase.Initialize();
-            FirebaseCloudMessagingImplementation.Initialize();
-            return false;
-        }));
-#elif ANDROID
-        events.AddAndroid(android => android.OnCreate((activity, _) =>
-        CrossFirebase.Initialize(activity)));
+#if ANDROID
+                events.AddAndroid(android => android.OnCreate((activity, _) =>
+                CrossFirebase.Initialize(activity)));
 #endif
             });
 

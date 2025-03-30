@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /catch-up-mobile/google-services.json
+/catch-up-mobile/secrets.json

@@ -19,7 +19,7 @@ namespace catch_up_mobile
             Instance = this;
             HandleIntent(Intent);
             CreateNotificationChannelIfNeeded();
-            RequestNotificationPermission(); // Dodajemy prośbę o uprawnienia
+            RequestNotificationPermission();
         }
 
         protected override void OnNewIntent(Intent intent)
@@ -50,20 +50,17 @@ namespace catch_up_mobile
             FirebaseCloudMessagingImplementation.ChannelId = channelId;
         }
 
-        // Metoda do żądania uprawnień do powiadomień
         private void RequestNotificationPermission()
         {
             if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu) // Android 13+
             {
                 if (CheckSelfPermission(Android.Manifest.Permission.PostNotifications) != Permission.Granted)
                 {
-                    // Żądamy uprawnienia, jeśli nie jest przyznane
                     RequestPermissions(new[] { Android.Manifest.Permission.PostNotifications }, RequestNotificationPermissionCode);
                 }
             }
         }
 
-        // Obsługa wyniku żądania uprawnień
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
         {
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -72,15 +69,11 @@ namespace catch_up_mobile
             {
                 if (grantResults.Length > 0 && grantResults[0] == Permission.Granted)
                 {
-                    // Uprawnienie przyznane
-                    Android.Util.Log.Info("NotificationPermission", "Notification permission granted");
+                    Toast.MakeText(this, "Notifications are now enabled.", ToastLength.Long).Show();
                 }
                 else
                 {
-                    // Uprawnienie odrzucone
-                    Android.Util.Log.Info("NotificationPermission", "Notification permission denied");
-                    // Możesz tutaj dodać komunikat dla użytkownika, np. toast
-                    Toast.MakeText(this, "Powiadomienia są wymagane do pełnego działania aplikacji.", ToastLength.Long).Show();
+                    Toast.MakeText(this, "Notifications are now disabled.", ToastLength.Long).Show();
                 }
             }
         }

@@ -7,6 +7,7 @@
 
 @using System.Text.Json
 @using System.IdentityModel.Tokens.Jwt
+@using Plugin.Firebase.CloudMessaging
 @using catch_up_mobile.Dtos
 @using catch_up_mobile.SQLite
 @using Microsoft.Maui.Devices.Sensors
@@ -142,12 +143,12 @@ else
             if (result.settings.settings.IsLocalizationRestricted && !isAdmin)
             { 
                 #if WINDOWS
-            var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
-            if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
-            {
-                errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
-                return true;
-            }
+        var accessStatus = await Windows.Devices.Geolocation.Geolocator.RequestAccessAsync();
+    if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
+    {
+        errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
+        return true;
+        }
                 #endif
                 var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
                 string json = await allCitiesResponse.Content.ReadAsStringAsync();
@@ -238,6 +239,7 @@ else
                     {
                         return;
                     }
+                    await RegisterFirebaseToken();
                     await OnLoginSuccessful.InvokeAsync();
                 }
                 else
@@ -258,6 +260,13 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private async Task RegisterFirebaseToken()
+    {
+        await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
+        var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+        await _httpClient.PostAsJsonAsync("api/Auth/RegisterFirebaseToken", firebaseToken);
     }
 
     private async Task FetchAndSaveCitiesFromApi()

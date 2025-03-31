@@ -3,12 +3,9 @@
 @inject IJSRuntime JS
 @using catch_up_mobile.SQLite
 @inject CatchUpLocalDb _localDb
-@using Plugin.Firebase.CloudMessaging
 
 <div class="container text-center">
     <h2>Welcome in catchUp</h2>
-    <h3>name: @name</h3>
-    <button type="button" class="btn btn-success w-100" @onclick='() => OnClicked()'>Small</button>
 </div>
 
 <div>
@@ -135,15 +132,5 @@
         {
             lightSensorService.LightLevelChanged -= OnLightLevelChanged;
         }
-    }
-
-    public string name;
-
-    private async void OnClicked()
-    {
-        await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
-        var token = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
-        Console.WriteLine($"FCM token: {token}");
-        name = $"FCM token: {token}";
     }
 }

@@ -345,14 +345,13 @@ i {
 }
 
 /* Settings */
-.theme-settings {
+.setting-container {
     text-align: left !important;
 }
 
-.font-settings {
-    text-align: left !important;
+.setting-container .btn-primary{
+    font-size: 16px !important;
 }
-
 
 .setting-row {
     display: flex;

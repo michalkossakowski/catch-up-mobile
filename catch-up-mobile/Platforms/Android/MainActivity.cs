@@ -48,6 +48,7 @@ namespace catch_up_mobile
             var channel = new NotificationChannel(channelId, "General", NotificationImportance.Default);
             notificationManager.CreateNotificationChannel(channel);
             FirebaseCloudMessagingImplementation.ChannelId = channelId;
+            FirebaseCloudMessagingImplementation.SmallIconRef = Resource.Drawable.ic_notification;
         }
 
         private void RequestNotificationPermission()
@@ -69,11 +70,11 @@ namespace catch_up_mobile
             {
                 if (grantResults.Length > 0 && grantResults[0] == Permission.Granted)
                 {
-                    Toast.MakeText(this, "Notifications are now enabled.", ToastLength.Long).Show();
+                    Toast.MakeText(this, "Notifications are enabled.", ToastLength.Short).Show();
                 }
                 else
                 {
-                    Toast.MakeText(this, "Notifications are now disabled.", ToastLength.Long).Show();
+                    Toast.MakeText(this, "Notifications are disabled.", ToastLength.Short).Show();
                 }
             }
         }

@@ -62,8 +62,8 @@ else
 }
 
 @code {
-    [Parameter]
-    public EventCallback OnLoginSuccessful {get; set; }
+        [Parameter]
+        public EventCallback OnLoginSuccessful {get; set; }
     private class LoginModel
     {
         public string Email { get; set; }
@@ -147,8 +147,8 @@ else
     if (accessStatus != Windows.Devices.Geolocation.GeolocationAccessStatus.Allowed)
     {
         errorMessage = "Location access denied by user. Please enable it in Settings > Privacy > Location.";
-        return true;
-        }
+    return true;
+    }
                 #endif
                 var allCitiesResponse = await _httpClient.GetAsync("api/CompanyCity/GetAllCities");
                 string json = await allCitiesResponse.Content.ReadAsStringAsync();
@@ -266,8 +266,12 @@ else
     {
         await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
         var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
-        await _httpClient.PostAsJsonAsync("api/Auth/RegisterFirebaseToken", firebaseToken);
-    }
+        await _httpClient.PostAsJsonAsync("api/Auth/RegisterFirebaseToken", new
+        {
+            firebaseToken = firebaseToken,
+            deviceName = DeviceInfo.Name.ToString()
+        });
+}
 
     private async Task FetchAndSaveCitiesFromApi()
     {

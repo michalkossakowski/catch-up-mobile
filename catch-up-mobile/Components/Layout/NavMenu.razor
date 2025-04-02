@@ -1,4 +1,5 @@
-﻿@using catch_up_mobile.Components.Pages.MaterialManager
+﻿@using Plugin.Firebase.CloudMessaging
+@using catch_up_mobile.Components.Pages.MaterialManager
 @inject CatchUpLocalDb DbContext
 @inject NavigationManager NavigationManager
 @inject HttpClient _httpClient
@@ -117,6 +118,23 @@
     private async Task HandleLogout()
     {
         await DbContext.ClearUserAsync();
+        try
+        {
+            await UnregisterFirebaseToken();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Cannot unregister firebase token");
+        }
+
         NavigationManager.NavigateTo("/", true);
+    }
+
+
+    private async Task UnregisterFirebaseToken()
+    {
+        await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
+        var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+        await _httpClient.PostAsJsonAsync("api/Auth/UnregisterFirebaseToken", firebaseToken);
     }
 }

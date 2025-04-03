@@ -37,7 +37,7 @@ yellow
 .bottom-panel {
     padding: 10px 0px;
     font-weight: bold;
-    height: 6rem;
+    height: 5rem;
     border-top: 1px solid #DB91D1;
 }
 
@@ -345,14 +345,13 @@ i {
 }
 
 /* Settings */
-.theme-settings {
+.setting-container {
     text-align: left !important;
 }
 
-.font-settings {
-    text-align: left !important;
+.setting-container .btn-primary{
+    font-size: 16px !important;
 }
-
 
 .setting-row {
     display: flex;

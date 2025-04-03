@@ -1,0 +1,37 @@
+@page "/notificationsettings"
+@using CommunityToolkit.Maui.Alerts
+
+<div class="setting-container">
+    <h3>Notifications:</h3>
+    <div class="setting-row">
+        <div class="setting-name">
+            Configure Application Settings
+        </div>
+        <button type="button" class="btn btn-primary" @onclick="OpenNotificationSettings">Open</button>
+    </div>
+</div>
+
+@code {
+
+
+
+    private void OpenNotificationSettings()
+    {
+        try
+        {
+#if ANDROID
+            var context = Android.App.Application.Context;
+            var intent = new Android.Content.Intent(Android.Provider.Settings.ActionAppNotificationSettings);
+            intent.PutExtra(Android.Provider.Settings.ExtraAppPackage, context.PackageName);
+            intent.AddFlags(Android.Content.ActivityFlags.NewTask);
+            context.StartActivity(intent);
+#else
+            throw new Exception("Not handled device type"); 
+#endif
+        }
+        catch (Exception ex)
+        {
+            Toast.Make("Yours device cannot handle notifications.").Show();
+        }
+    }
+}

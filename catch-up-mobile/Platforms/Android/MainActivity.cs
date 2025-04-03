@@ -45,7 +45,7 @@ namespace catch_up_mobile
         {
             var channelId = $"{PackageName}.general";
             var notificationManager = (NotificationManager)GetSystemService(NotificationService);
-            var channel = new NotificationChannel(channelId, "General", NotificationImportance.Default);
+            var channel = new NotificationChannel(channelId, "General", NotificationImportance.Max);
             notificationManager.CreateNotificationChannel(channel);
             FirebaseCloudMessagingImplementation.ChannelId = channelId;
             FirebaseCloudMessagingImplementation.SmallIconRef = Resource.Drawable.ic_notification;

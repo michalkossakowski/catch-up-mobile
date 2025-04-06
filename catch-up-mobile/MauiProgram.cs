@@ -7,6 +7,8 @@ using Plugin.LocalNotification;
 using Microsoft.Maui.LifecycleEvents;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
+using catch_up_mobile.Services;
+using catch_up_mobile.Providers;
 
 #if ANDROID
 using Plugin.Fingerprint;
@@ -72,7 +74,7 @@ namespace catch_up_mobile
             builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
 
             //SQL Lite
-            builder.Services.AddSingleton<CatchUpLocalDb>(s => new CatchUpLocalDb(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
+            builder.Services.AddSingleton<CatchUpdbContext>(s => new CatchUpdbContext(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
             // Biometric Auth
             builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();
@@ -81,7 +83,15 @@ namespace catch_up_mobile
             CrossFingerprint.SetCurrentActivityResolver(() => Platform.CurrentActivity);
             builder.Services.AddSingleton<ILightSensorService, LightSensorService>();
 #endif
+            //SignalR
+            builder.Services.AddSingleton<SignalRService>();
 
+            //HttpClient Provider with Authorization Token
+            builder.Services.AddSingleton<HttpClientProvider>();
+
+            //NotificationStateService
+            builder.Services.AddSingleton<NotificationStateService>();
+            
             // ----------- Custom Section End -----------
             return builder.Build();
         }

@@ -2,7 +2,7 @@
 
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
-@inject CatchUpLocalDb DbContext
+@inject CatchUpdbContext _dbContext
 @using catch_up_mobile.SQLite
 @using CommunityToolkit.Maui.Alerts
 @using System.ComponentModel.DataAnnotations;
@@ -85,7 +85,7 @@
 
     private async Task HandleValidSubmit()
     {
-        UserDto currentUser = await DbContext.GetUserAsync();
+        UserDto currentUser = await _dbContext.GetUserAsync();
         var response = await _httpClient.PutAsJsonAsync($"api/Task/EditFullTask/{newFullTask.Id}/{currentUser.Id}", newFullTask);
         if (response.IsSuccessStatusCode)
         {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net.Http;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 
 namespace catch_up_mobile.SQLite

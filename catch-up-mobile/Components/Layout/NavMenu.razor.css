@@ -52,8 +52,27 @@ yellow
 .navbar-username {
     font-size: 16px !important;
     position: absolute;
-    right: 3rem;
+    right: 5rem;
     top: 1.05rem;
+}
+
+.navbar-bell i {
+    position: absolute !important;
+    right: 3.1rem;
+    top: 0.9rem;
+}
+
+.navbar-bell.active i {
+    color: #DB91D1
+}
+
+.new-notification-dot {
+    font-size: 14px;
+    color: #DB91D1;
+    position: absolute !important;
+    right: 2.7rem !important;
+    top: 0.7rem !important;
+    z-index: 10;
 }
 
 .nav-items-box {

@@ -1,19 +1,22 @@
 ﻿@page "/login"
 
-@inject HttpClient _httpClient
-@inject NavigationManager NavigationManager
-@inject CatchUpLocalDb DbContext
-@inject IBiometricAuthService BiometricAuth
-
 @using System.Text.Json
 @using System.IdentityModel.Tokens.Jwt
 @using Plugin.Firebase.CloudMessaging
+@using System.Net.Http.Headers
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.Providers
 @using catch_up_mobile.SQLite
 @using Microsoft.Maui.Devices.Sensors
 @using CommunityToolkit.Maui.Alerts
 @using Plugin.Fingerprint
 @using Plugin.Fingerprint.Abstractions
+
+@inject HttpClient _httpClient
+@inject HttpClientProvider _httpClientProvider
+@inject NavigationManager NavigationManager
+@inject CatchUpdbContext _dbContext
+@inject IBiometricAuthService BiometricAuth
 
 @if (isLoading)
 {
@@ -62,8 +65,8 @@ else
 }
 
 @code {
-        [Parameter]
-        public EventCallback OnLoginSuccessful {get; set; }
+    [Parameter]
+    public EventCallback OnLoginSuccessful {get; set; }
     private class LoginModel
     {
         public string Email { get; set; }
@@ -79,7 +82,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await DbContext.GetUserAsync();
+        var user = await _dbContext.GetUserAsync();
         bool available = false;
 
         if (DeviceInfo.Platform == DevicePlatform.Android || DeviceInfo.Platform == DevicePlatform.iOS) {
@@ -114,7 +117,7 @@ else
 
         if (result.Authenticated)
         {
-            UserDto user = await DbContext.GetUserAsync();
+            UserDto user = await _dbContext.GetUserAsync();
             if (await CheckLocationAccess(user.Id))
             {
                 isLoading = false;
@@ -139,7 +142,7 @@ else
             Boolean isAdmin = await userRoleResponse.Content.ReadAsStringAsync() == "Admin";
 
             var result = await companySetting.Content.ReadFromJsonAsync<CompanySettingsResponse>();
-            await DbContext.SaveLocalizationSettingAsync(result.settings.settings.IsLocalizationRestricted);
+            await _dbContext.SaveLocalizationSettingAsync(result.settings.settings.IsLocalizationRestricted);
             if (result.settings.settings.IsLocalizationRestricted && !isAdmin)
             { 
                 #if WINDOWS
@@ -156,16 +159,16 @@ else
                 if (allCities != null && allCities.Any())
                 {
                     cities = allCities;
-                    List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                    List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
                     foreach (CompanyCityDto city in cities)
                     {
                         if (!existingCities.Any(ec => ec.cityName == city.cityName))
                         {
-                            await DbContext.AddCityAsync(city);
+                            await _dbContext.AddCityAsync(city);
                         }
                     }
 
-                    await CompanyLocator.GetLocation(DbContext);
+                    await CompanyLocator.GetLocation(_dbContext);
                     if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
                     {
                         errorMessage = "You are out of bounds of a company city";
@@ -184,13 +187,13 @@ else
         {
             try
             {
-                LocalizationSettingDto isLocalizationRestricted = await DbContext.GetLocalizationSettingAsync();
+                LocalizationSettingDto isLocalizationRestricted = await _dbContext.GetLocalizationSettingAsync();
                 if (isLocalizationRestricted.IsRestricted)
                 {
-                    List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+                    List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
                     if (existingCities != null && existingCities.Count != 0)
                     {
-                        await CompanyLocator.GetLocation(DbContext);
+                        await CompanyLocator.GetLocation(_dbContext);
                         if (CompanyLocator.locationMessage.Contains("You are out of company cities"))
                         {
                             errorMessage = "You are offline and out of bounds of a company city";
@@ -235,11 +238,17 @@ else
                 if (tokens != null)
                 {
                     var canProceed = await SaveUserAsync(tokens);
+
+                    await _dbContext.SaveAccessToken(tokens.AccessToken);
+                    _httpClientProvider.SetAccessToken(tokens.AccessToken);
+
+                    await RegisterFirebaseToken(tokens.AccessToken);
+
                     if (!canProceed)
                     {
                         return;
                     }
-                    await RegisterFirebaseToken();
+
                     await OnLoginSuccessful.InvokeAsync();
                 }
                 else
@@ -262,16 +271,17 @@ else
         }
     }
 
-    private async Task RegisterFirebaseToken()
+    private async Task RegisterFirebaseToken(string accessToken)
     {
         await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
         var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         await _httpClient.PostAsJsonAsync("api/Auth/RegisterFirebaseToken", new
         {
             firebaseToken = firebaseToken,
             deviceName = DeviceInfo.Name.ToString()
         });
-}
+    }
 
     private async Task FetchAndSaveCitiesFromApi()
     {
@@ -295,13 +305,13 @@ else
                 return;
             }
 
-            List<CompanyCityDto> existingCities = await DbContext.GetCitiesAsync();
+            List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
 
             foreach (CompanyCityDto city in apiCities)
             {
                 if (!existingCities.Any(c => c.cityName.Equals(city.cityName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    await DbContext.AddCityAsync(city);
+                    await _dbContext.AddCityAsync(city);
                 }
             }
 
@@ -321,7 +331,7 @@ else
 
         JwtTokens.HttpClient = _httpClient;
         JwtTokens.SetTokens(tokens.AccessToken, tokens.RefreshToken);
-
+        
         var userResponse = await _httpClient.GetFromJsonAsync<UserDto>($"api/User/GetById/{userId}");
 
         if (await CheckLocationAccess(userResponse.Id))
@@ -331,7 +341,7 @@ else
 
         if (userResponse != null)
         {
-            await DbContext.SaveUserAsync(new UserDto
+            await _dbContext.SaveUserAsync(new UserDto
                 {
                     Id = userResponse.Id,
                     Name = userResponse.Name,

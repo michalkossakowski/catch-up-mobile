@@ -1,6 +1,6 @@
 ﻿@page "/localization-panel-admin"
 @inject IJSRuntime JSRuntime
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject HttpClient _httpClient
 @using Microsoft.Maui.ApplicationModel
 @using Microsoft.Maui.Devices.Sensors
@@ -137,13 +137,13 @@
     {
         try
         {
-            if (_localDb == null)
+            if (_dbContext == null)
             {
-                responseMessage = "Database service (_localDb) is not available.";
+                responseMessage = "Database service (_dbContext) is not available.";
                 return;
             }
             await FetchAndSaveCitiesFromApi();
-            cities = await _localDb.GetCitiesAsync();
+            cities = await _dbContext.GetCitiesAsync();
             responseMessage = $"Loaded {cities.Count} city/cities on initialization.";
         }
         catch (Exception ex)
@@ -191,13 +191,13 @@
                 responseMessage = "No settings received from API.";
                 return;
             }
-            List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
+            List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
 
             foreach (CompanyCityDto city in apiCities)
             {
                 if (!existingCities.Any(c => c.cityName.Equals(city.cityName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    await _localDb.AddCityAsync(city);
+                    await _dbContext.AddCityAsync(city);
                 }
             }
             isLocalizationTurnedOn = companySettingsDto.Settings.FirstOrDefault(s => s.Key == "IsLocalizationRestricted").Value;
@@ -212,13 +212,13 @@
     {
         try
         {
-            if (_localDb == null)
+            if (_dbContext == null)
             {
-                responseMessage = "Database service (_localDb) is not available.";
+                responseMessage = "Database service (_dbContext) is not available.";
                 return;
             }
 
-            cities = await _localDb.GetCitiesAsync();
+            cities = await _dbContext.GetCitiesAsync();
             responseMessage = $"Fetched {cities.Count} city/cities from the database.";
         }
         catch (Exception ex)
@@ -230,9 +230,9 @@
     {
         try
         {
-            if (_localDb == null)
+            if (_dbContext == null)
             {
-                responseMessage = "Database service (_localDb) is not available.";
+                responseMessage = "Database service (_dbContext) is not available.";
                 return;
             }
 
@@ -242,7 +242,7 @@
                 return;
             }
 
-            List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
+            List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
             if (existingCities.Any(c => c.cityName.Equals(newCity.cityName, StringComparison.OrdinalIgnoreCase)))
             {
                 responseMessage = $"City '{newCity.cityName}' already exists in the database.";
@@ -253,7 +253,7 @@
 
             if (apiResponse.IsSuccessStatusCode)
             {
-                int result = await _localDb.AddCityAsync(newCity);
+                int result = await _dbContext.AddCityAsync(newCity);
 
                 if (result > 0)
                 {
@@ -306,7 +306,7 @@
 
             if (apiResponse.IsSuccessStatusCode)
             {
-                int result = await _localDb.DeleteCityAsync(cityToDelete);
+                int result = await _dbContext.DeleteCityAsync(cityToDelete);
 
                 if (result > 0)
                 {
@@ -354,13 +354,13 @@
     {
         try
         {
-            if (_localDb == null)
+            if (_dbContext == null)
             {
-                responseMessage = "Database service (_localDb) is not available.";
+                responseMessage = "Database service (_dbContext) is not available.";
                 return;
             }
 
-            List<CompanyCityDto> allCities = await _localDb.GetCitiesAsync();
+            List<CompanyCityDto> allCities = await _dbContext.GetCitiesAsync();
             if (allCities == null || !allCities.Any())
             {
                 responseMessage = "No cities to delete.";
@@ -378,7 +378,7 @@
                 }
             }
 
-            await _localDb.DeleteAllCitiesAsync();
+            await _dbContext.DeleteAllCitiesAsync();
             responseMessage = "All cities have been deleted successfully.";
 
             cities.Clear();

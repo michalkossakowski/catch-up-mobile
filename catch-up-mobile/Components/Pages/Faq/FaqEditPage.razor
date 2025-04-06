@@ -1,7 +1,7 @@
 ﻿@page "/faq/edit/{editedFaqId:int?}"
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.Dtos
@@ -115,7 +115,7 @@
             editedFaq.Question = faqModel.Question;
             editedFaq.Answer = faqModel.Answer;
             editedFaq.MaterialId = faqModel.MaterialId;
-            await _localDb.UpdateFaqAsync(editedFaq);
+            await _dbContext.UpdateFaqAsync(editedFaq);
             await Toast.Make($"FAQ [{editedFaqId}] successfully edited").Show();
         }
         else
@@ -127,7 +127,7 @@
                     Answer = faqModel.Answer,
                     MaterialId = faqModel.MaterialId
                 };
-            await _localDb.AddFaqAsync(newFaq);
+            await _dbContext.AddFaqAsync(newFaq);
             await Toast.Make("FAQ successfully added").Show();
         }
 

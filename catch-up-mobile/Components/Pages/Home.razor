@@ -2,7 +2,7 @@
 @inject IServiceProvider ServiceProvider
 @inject IJSRuntime JS
 @using catch_up_mobile.SQLite
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 
 <div class="container text-center">
     <h2>Welcome in catchUp</h2>
@@ -76,7 +76,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var fontSize = await _localDb.GetFontSizeAsync();
+        var fontSize = await _dbContext.GetFontSizeAsync();
         if (fontSize != null)
             await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
 

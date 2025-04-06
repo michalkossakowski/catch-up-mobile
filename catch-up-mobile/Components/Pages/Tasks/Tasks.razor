@@ -1,7 +1,7 @@
 ﻿@page "/tasks"
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb DbContext
+@inject CatchUpdbContext _dbContext
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.SQLite
@@ -101,7 +101,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         cards = new List<Card>();
-        currentUser = await DbContext.GetUserAsync();
+        currentUser = await _dbContext.GetUserAsync();
         List<FullTask> fullTasks = new List<FullTask>();
         try
         {
@@ -130,7 +130,7 @@ else
         {
             isOnline = false;
 
-            var fullTasksOffline = await DbContext.GetTasksForUserAsync(currentUser.Id);
+            var fullTasksOffline = await _dbContext.GetTasksForUserAsync(currentUser.Id);
             cards = new List<Card>();
             foreach (var fullTask in fullTasksOffline)
             {
@@ -149,10 +149,10 @@ else
 
         foreach (var fullTask in fullTasks)
         {
-            var response = await DbContext.UpdateTaskAsync(fullTask);
+            var response = await _dbContext.UpdateTaskAsync(fullTask);
             if (response == 0)
             {
-                await DbContext.AddTaskAsync(fullTask);
+                await _dbContext.AddTaskAsync(fullTask);
             }
 
             Card newCard = new Card();

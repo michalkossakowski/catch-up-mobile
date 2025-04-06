@@ -1,16 +1,29 @@
-﻿@using Plugin.Firebase.CloudMessaging
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using Plugin.Firebase.CloudMessaging
+@using System.Net.Http.Headers
 @using catch_up_mobile.Components.Pages.MaterialManager
-@inject CatchUpLocalDb DbContext
-@inject NavigationManager NavigationManager
-@inject HttpClient _httpClient
-
-@using catch_up_mobile.SQLite
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@using catch_up_mobile.Services
+@using catch_up_mobile.Providers
+
+@inject CatchUpdbContext _dbContext
+@inject NavigationManager NavigationManager
+@inject HttpClientProvider _httpClientProvider
+@inject SignalRService SignalRService
+@inject NotificationStateService NotificationStateService
 
 <div class="top-row navbar navbar-dark">
     <div class="container-fluid navbar-box">
         <a class="navbar-brand" href="/">catchUp</a>
         <b class="navbar-username">@userName</b>
+        <NavLink class="navbar-bell" href="notifications" @onclick="MarkAsRead">
+            @if (NotificationStateService.UnreadNotification)
+            {
+                <i class="bi-chat-left-dots-fill new-notification-dot"></i>
+            }
+            <i class="bi-bell fs-5"></i>
+        </NavLink>
     </div>
 </div>
 
@@ -21,6 +34,11 @@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
                 <i class="bi-house-door-fill fs-5" aria-hidden="true"></i> <span>Home</span> 
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="notifications" @onclick="MarkAsRead">
+                <i class="bi-bell fs-5" aria-hidden="true"></i> <span>Notifications</span>
             </NavLink>
         </div>
         <div class="nav-item px-3">
@@ -98,9 +116,15 @@
 @code {
     public string userName = "";
     private string userPosition = "";
+    private HttpClient _httpClient;
+    private HubConnection _connection;
+
     protected override async Task OnInitializedAsync()
     {
-        UserDto user = await DbContext.GetUserAsync();
+        _httpClient = _httpClientProvider.GetHttpClient();
+        await _httpClientProvider.SetAccessTokenFromDb();
+        
+        UserDto user = await _dbContext.GetUserAsync();
         userName = $"{user.Name} {user.Surname}";
 
         try
@@ -112,20 +136,64 @@
         {
             userPosition = "Offline";
         }
+
+        try
+        {
+            await FetctNotifcations();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Cannot get notifications: " + ex);
+        }
+
+        try
+        {
+            await SignalRService.StartAsync();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Cannot connect to singalR: " + ex);
+        }
+
+        _connection = SignalRService.GetHubConncetion();
+        _connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
+        {
+            NotificationStateService.SetUnreadNotification(true);
+            await _dbContext.AddNotificationAsync(notification);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        NotificationStateService.OnChange += async () => await InvokeAsync(StateHasChanged);
     }
 
 
     private async Task HandleLogout()
     {
-        await DbContext.ClearUserAsync();
+        try
+        {
+            if (_connection != null)
+            {
+                _connection.Remove("ReceiveNotification");
+            }
+            await SignalRService.StopAsync();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Cannot disconnect to singalR: " + ex);
+        }
+
         try
         {
             await UnregisterFirebaseToken();
         }
         catch(Exception ex)
         {
-            Console.WriteLine("Cannot unregister firebase token");
+            Console.WriteLine("Cannot unregister firebase token" + ex);
         }
+
+        await _dbContext.ClearUserAsync();
+        await _dbContext.DeleteAccessToken();
+        await _dbContext.DeleteAllNotificationsAsync();
 
         NavigationManager.NavigateTo("/", true);
     }
@@ -136,5 +204,30 @@
         await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
         var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
         await _httpClient.PostAsJsonAsync("api/Auth/UnregisterFirebaseToken", firebaseToken);
+    }
+
+    private async Task FetctNotifcations()
+    {
+        var response = await _httpClient.GetAsync("/api/Notification/GetByUserToken?pageNumber=1&pageSize=20");
+        if (response.IsSuccessStatusCode)
+        {
+            var notificationsResponse = await response.Content.ReadFromJsonAsync<NotificationResponse>();
+            await _dbContext.DeleteAllNotificationsAsync();
+            await _dbContext.AddNotificationsAsync(notificationsResponse.Notifications);
+            await _dbContext.SaveNotificationCount(notificationsResponse.TotalCount);
+
+            NotificationStateService.SetUnreadNotification(notificationsResponse.Notifications.Any(n => !n.IsRead));
+        }
+        else
+        {
+            Console.WriteLine($"Failed to fetch notifications: {response.StatusCode}");
+        }
+    }
+
+    private async Task MarkAsRead()
+    {
+        NotificationStateService.SetUnreadNotification(false);
+        var respone = await _httpClient.GetAsync($"/api/Notification/ReadNotifications");
+        await InvokeAsync(StateHasChanged);
     }
 }

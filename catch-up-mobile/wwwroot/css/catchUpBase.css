@@ -398,3 +398,12 @@ i {
 .form-check-input:focus:not(:checked) {
     border-color: #DB91D1 !important;
 }
+
+.notification-footer{
+    display: flex;
+    justify-content: space-between;
+}
+
+.unread-card{
+    border: 2px solid #DB91D1 !important;
+}

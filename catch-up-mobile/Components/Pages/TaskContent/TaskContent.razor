@@ -3,7 +3,7 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
-@inject CatchUpLocalDb DbContext
+@inject CatchUpdbContext _dbContext
 @using catch_up_mobile.Dtos
 @using Microsoft.Maui.Devices.Sensors
 @using catch_up_mobile.SQLite
@@ -173,10 +173,10 @@ else
             materials = await materialsTask;
             taskContents = await tasksTask;
 
-            await DbContext.DeleteAllTaskContentsAsync();
+            await _dbContext.DeleteAllTaskContentsAsync();
             foreach (var task in taskContents)
             {
-                await DbContext.AddTaskContentAsync(task);
+                await _dbContext.AddTaskContentAsync(task);
             }
             
             offlineMode = false;
@@ -185,16 +185,16 @@ else
         {
             offlineMode = true;
 
-            taskContents = await DbContext.GetTaskContentsAsync();
-            categories = await DbContext.GetCategoriesAsync();
-            materials = await DbContext.GetMaterialsAsync();
+            taskContents = await _dbContext.GetTaskContentsAsync();
+            categories = await _dbContext.GetCategoriesAsync();
+            materials = await _dbContext.GetMaterialsAsync();
         }
         catch (Exception)
         {
             offlineMode = true;
-            taskContents = await DbContext.GetTaskContentsAsync();
-            categories = await DbContext.GetCategoriesAsync();
-            materials = await DbContext.GetMaterialsAsync();
+            taskContents = await _dbContext.GetTaskContentsAsync();
+            categories = await _dbContext.GetCategoriesAsync();
+            materials = await _dbContext.GetMaterialsAsync();
         }
     }
 
@@ -259,10 +259,10 @@ else
                 taskContents = new List<TaskContentDto>();
             }
 
-            await DbContext.DeleteAllTaskContentsAsync();
+            await _dbContext.DeleteAllTaskContentsAsync();
             foreach (var task in taskContents)
             {
-                await DbContext.AddTaskContentAsync(task);
+                await _dbContext.AddTaskContentAsync(task);
             }
 
             offlineMode = false;
@@ -284,7 +284,7 @@ else
         catch (HttpRequestException)
         {
             offlineMode = true;
-            taskContents = await DbContext.GetTaskContentsAsync();
+            taskContents = await _dbContext.GetTaskContentsAsync();
         }
     }
 
@@ -292,7 +292,7 @@ else
     {
         try
         {
-            UserDto user = await DbContext.GetUserAsync();
+            UserDto user = await _dbContext.GetUserAsync();
             newTaskContent.CreatorId = user.Id;
 
             var result = await Http.PostAsJsonAsync("api/TaskContent/Add", newTaskContent);

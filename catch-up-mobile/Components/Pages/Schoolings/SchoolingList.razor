@@ -6,7 +6,7 @@
 @using catch_up_mobile.Enums
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject NavigationManager NavigationManager
 
 @page "/schoolingList"
@@ -107,7 +107,7 @@
     {
         try
         {
-            userId = _localDb.GetUserAsync().Result.Id;
+            userId = _dbContext.GetUserAsync().Result.Id;
             userPosition = await _httpClient.GetStringAsync($"api/User/GetRole/{userId}");
             Console.WriteLine(userPosition);
             if (userPosition == "Admin" || userPosition == "Mentor")

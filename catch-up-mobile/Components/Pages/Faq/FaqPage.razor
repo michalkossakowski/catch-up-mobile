@@ -1,7 +1,7 @@
 ﻿@page "/faq"
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject NavigationManager NavigationManager
 
 @using catch_up_mobile.Dtos
@@ -148,7 +148,7 @@
     {
         try
         {
-            UserDto user = await _localDb.GetUserAsync();
+            UserDto user = await _dbContext.GetUserAsync();
             var userRoleResonse = await _httpClient.GetAsync($"api/User/GetRole/{user.Id}");
             isAdmin = await userRoleResonse.Content.ReadAsStringAsync() == "Admin";
 
@@ -157,9 +157,9 @@
             if (response.IsSuccessStatusCode)
             {
                 faqs = await response.Content.ReadFromJsonAsync<List<FaqDto>>();
-                await _localDb.DeleteAllFaqsAsync();
+                await _dbContext.DeleteAllFaqsAsync();
                 foreach (var faq in faqs)
-                    await _localDb.AddFaqAsync(faq);
+                    await _dbContext.AddFaqAsync(faq);
                 offlineMode = false;
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -173,7 +173,7 @@
         }
         catch (HttpRequestException ex)
         {
-            faqs = await _localDb.GetFaqsAsync();
+            faqs = await _dbContext.GetFaqsAsync();
             offlineMode = true;
         }
 
@@ -197,7 +197,7 @@
             if (isConfirmed)
             {
                 _httpClient.DeleteAsync($"api/faq/delete/{faqToDelete.Id}");
-                _localDb.DeleteFaqAsync(faqToDelete);
+                _dbContext.DeleteFaqAsync(faqToDelete);
                 faqs.Remove(faqToDelete);
                 filteredFaqs = faqs;
                 faqToDelete = null;

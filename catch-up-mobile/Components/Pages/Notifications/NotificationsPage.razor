@@ -1,0 +1,136 @@
+﻿@page "/notifications"
+@using CommunityToolkit.Maui.Alerts
+@using Microsoft.AspNetCore.SignalR.Client
+@using catch_up_mobile.Dtos
+@using catch_up_mobile.Providers
+@using catch_up_mobile.SQLite
+@using catch_up_mobile.Services
+@implements IDisposable
+
+@inject SignalRService SignalRService
+@inject CatchUpdbContext _dbContext
+@inject HttpClientProvider _httpClientProvider
+@inject NotificationStateService NotificationStateService
+
+<div class="container">
+    <h3 class="text-center"><i class="bi bi-bell"></i> Notifications</h3>
+
+
+    @if (loading)
+    {
+        <div class="text-center m-5">
+            <Loading />
+        </div>
+    }
+    else
+    {
+        <div class="notification-container">
+            @if (Notifications.Count == 0)
+            {
+                <div class="alert alert-info m-3">
+                    <i class="bi bi-bell"></i> You don’t have any notifications <i class="bi bi-bell"></i>
+                </div>
+            }
+            else
+            {
+                @foreach (var notification in Notifications)
+                {
+                    <div class="notification-card-container">
+                        @if (!notification.IsRead)
+                        {
+                            <div class="text-center w-100">
+                                <small class="text-primary new-notificaiton-info">New</small>
+                            </div>
+                        }
+                        <div class="@(notification.IsRead ? "card mb-2" : "card mb-2 unread-card")" @onclick="() => NavigateToSource(notification.Source)">
+                            <div class="card-body">
+                                <h5 class="card-title">@notification.Title</h5>
+                                <p class="card-text">@notification.Message</p>
+                                <div class="notification-footer">
+                                    <small class="text-primary">See more: @notification.Source</small>
+                                    <small class="text-muted">@notification.SendDate.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (Notifications.Count < TotalCount)
+                {
+                    <div class="text-center">
+                        <button class="btn btn-primary m-3" @onclick="LoadMore">Load more...</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary m-3">
+                        <i class="bi bi-bell"></i> You don’t have any more old notifications <i class="bi bi-bell"></i>
+                    </div>
+                }
+            }
+        </div>
+    }
+    
+</div>
+
+@code {
+    private List<NotificationDto> Notifications { get; set; } = new();
+    private int TotalCount { get; set; } = 0;
+    private HttpClient _httpClient;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _httpClient = _httpClientProvider.GetHttpClient();
+
+        Notifications = await _dbContext.GetNotificationsAsync();
+        var notificationCount = await _dbContext.GetNotificationCount();
+        TotalCount = notificationCount.TotalCount;
+
+        var connection = SignalRService.GetHubConncetion();
+        connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
+        {
+            Notifications.Insert(0, notification);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        NotificationStateService.OnChange += async () => await InvokeAsync(StateHasChanged);
+        loading = false;
+    }
+
+    private async Task LoadMore()
+    {
+        var page = Math.Floor((decimal)Notifications.Count / 20) + 1;
+        var response = await _httpClient.GetAsync($"/api/Notification/GetByUserToken?pageNumber={page}&pageSize=20");
+        if (response.IsSuccessStatusCode)
+        {
+            var notificationsResponse = await response.Content.ReadFromJsonAsync<NotificationResponse>();
+
+            var existingIds = Notifications.Select(n => n.NotificationId).ToHashSet();
+            var moreNotifications = notificationsResponse.Notifications
+                .Where(n => !existingIds.Contains(n.NotificationId))
+                .ToList();
+
+            await _dbContext.AddNotificationsAsync(moreNotifications);
+            Notifications.AddRange(moreNotifications);
+
+            await _dbContext.SaveNotificationCount(notificationsResponse.TotalCount);
+            TotalCount = notificationsResponse.TotalCount;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void NavigateToSource(string source)
+    {
+       Toast.Make($"Place for routing to {source}").Show();
+    }
+
+    public void Dispose()
+    {
+        Notifications.ForEach(n => n.IsRead = true);
+        NotificationStateService.SetUnreadNotification(false);
+        Task.Run(() => _dbContext.UpdateNotificationsAsync(Notifications));
+
+        NotificationStateService.OnChange -= async () => await InvokeAsync(StateHasChanged);
+    }
+}

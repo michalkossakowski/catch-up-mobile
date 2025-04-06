@@ -5,7 +5,7 @@
 @using catch_up_mobile.SQLite
 @using CommunityToolkit.Maui.Alerts
 
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
 <div class="text-center">
@@ -123,7 +123,7 @@ else
                         Title = schoolingModel.Title,
                         Description = schoolingModel.Description,
                         Priority = schoolingModel.Priority,
-                        CreatorId = _localDb.GetUserAsync().Result.Id
+                        CreatorId = _dbContext.GetUserAsync().Result.Id
                     };
                 var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingDto);
                 if (response.IsSuccessStatusCode)

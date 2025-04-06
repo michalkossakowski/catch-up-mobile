@@ -1,7 +1,7 @@
 ﻿@page "/feedback/add"
 @inject HttpClient _httpClient
 @inject NavigationManager NavigationManager
-@inject CatchUpLocalDb DbContext
+@inject CatchUpdbContext _dbContext
 
 @using System.Text.Json
 @using catch_up_mobile.Dtos
@@ -82,7 +82,7 @@
     {
         try
         {
-            UserDto user = await DbContext.GetUserAsync();
+            UserDto user = await _dbContext.GetUserAsync();
             userId = user.Id;
             
             feedbackModel.SenderId = userId;

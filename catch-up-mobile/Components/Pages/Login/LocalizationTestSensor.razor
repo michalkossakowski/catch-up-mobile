@@ -1,6 +1,6 @@
 ﻿@page "/localization-test"
 @inject IJSRuntime JSRuntime
-@inject CatchUpLocalDb _localDb
+@inject CatchUpdbContext _dbContext
 @inject HttpClient _httpClient
 @using Microsoft.Maui.ApplicationModel
 @using Microsoft.Maui.Devices.Sensors
@@ -13,7 +13,7 @@
     <h1 class="text-center">City Localization Test</h1>
 
     <div class="d-flex justify-content-center mb-3">
-        <button class="btn btn-primary" @onclick='() => CompanyLocator.GetLocation(_localDb)'>Check your city</button>
+        <button class="btn btn-primary" @onclick='() => CompanyLocator.GetLocation(_dbContext)'>Check your city</button>
     </div>
     <p class="text-center">@CompanyLocator.locationMessage</p>
 
@@ -46,9 +46,9 @@
     {
         try
         {
-            if (_localDb == null)
+            if (_dbContext == null)
             {
-                responseMessage = "Database service (_localDb) is not available.";
+                responseMessage = "Database service (_dbContext) is not available.";
                 return;
             }
             try
@@ -60,12 +60,12 @@
                 if (apiCities != null && apiCities.Any())
                 {
                     cities = apiCities;
-                    List<CompanyCityDto> existingCities = await _localDb.GetCitiesAsync();
+                    List<CompanyCityDto> existingCities = await _dbContext.GetCitiesAsync();
                     foreach (CompanyCityDto city in cities)
                     {
                         if (!existingCities.Any(ec => ec.cityName == city.cityName))
                         {
-                            await _localDb.AddCityAsync(city);
+                            await _dbContext.AddCityAsync(city);
                         }
                     }
                     responseMessage = $"Loaded {cities.Count} city/cities from API.";
@@ -76,7 +76,7 @@
             {
                 responseMessage = $"Failed to load data from API: {apiEx.Message}.";
             }
-            cities = await _localDb.GetCitiesAsync();
+            cities = await _dbContext.GetCitiesAsync();
             if (cities != null && cities.Any())
             {
                 responseMessage = $"Loaded {cities.Count} city/cities from local database.";

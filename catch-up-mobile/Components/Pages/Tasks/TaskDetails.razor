@@ -1,7 +1,7 @@
 ﻿@page "/tasks/details/{fullTaskId:int?}"
 
 @inject HttpClient _httpClient
-@inject CatchUpLocalDb DbContext
+@inject CatchUpdbContext _dbContext
 @inject NavigationManager NavigationManager
 @using catch_up_mobile.Components.Pages.MaterialManager
 @using System.ComponentModel.DataAnnotations;
@@ -217,7 +217,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        currentUser = await DbContext.GetUserAsync();
+        currentUser = await _dbContext.GetUserAsync();
         try
         {
             fullTask = await _httpClient.GetFromJsonAsync<FullTask>($"api/Task/GetFullTaskById/{fullTaskId}");
@@ -230,7 +230,7 @@ else
         catch (HttpRequestException ex)
         {
 
-            fullTask = await DbContext.GetFullTaskAsync((int)fullTaskId);
+            fullTask = await _dbContext.GetFullTaskAsync((int)fullTaskId);
             isOnline = false;
 
         }
@@ -250,7 +250,7 @@ else
         {
             fullTask = newFullTask;
             spendTime = 0;
-            await DbContext.UpdateTaskAsync(fullTask);
+            await _dbContext.UpdateTaskAsync(fullTask);
             Toast.Make($"Time logged").Show();
         }
 
@@ -282,7 +282,7 @@ else
         if (response.IsSuccessStatusCode)
         {
             fullTask = newFullTask;
-            await DbContext.UpdateTaskAsync(fullTask);
+            await _dbContext.UpdateTaskAsync(fullTask);
             Toast.Make($"Status changed").Show();
         }
     }
@@ -300,7 +300,7 @@ else
                 if (response.IsSuccessStatusCode)
                 {
                     Toast.Make($"Status changed").Show();
-                    await DbContext.DeleteTaskAsync(fullTask);
+                    await _dbContext.DeleteTaskAsync(fullTask);
                     NavigationManager.NavigateTo($"/tasks");
                 }
             }

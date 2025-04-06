@@ -122,7 +122,8 @@
     protected override async Task OnInitializedAsync()
     {
         _httpClient = _httpClientProvider.GetHttpClient();
-
+        await _httpClientProvider.SetAccessTokenFromDb();
+        
         UserDto user = await _dbContext.GetUserAsync();
         userName = $"{user.Name} {user.Surname}";
 

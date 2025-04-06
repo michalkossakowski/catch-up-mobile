@@ -9,8 +9,16 @@ namespace catch_up_mobile.SQLite
         // (this will probably never happen xd because Kristofer is lazy and stupid)
         public async Task<string> GetAccessToken()
         {
-            var at = await _database.Table<AccessTokenDto>().FirstOrDefaultAsync();
-            return at.Token;
+            try
+            {
+                var at = await _database.Table<AccessTokenDto>().FirstOrDefaultAsync();
+                return at.Token;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting access token: {ex.Message}");
+                return string.Empty;
+            }
         }
         public Task<int> SaveAccessToken(string token)
         {

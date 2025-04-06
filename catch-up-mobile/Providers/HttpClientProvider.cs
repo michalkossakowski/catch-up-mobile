@@ -14,7 +14,7 @@ namespace catch_up_mobile.Providers
 
             var httpClientHandler = new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true 
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
             };
 
             _httpClient = new HttpClient(httpClientHandler)
@@ -31,6 +31,12 @@ namespace catch_up_mobile.Providers
         public void SetAccessToken(string accessToken)
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        public async Task SetAccessTokenFromDb()
+        {
+            var accessToken = await _dbContext.GetAccessToken();
+            SetAccessToken(accessToken);
         }
     }
 }

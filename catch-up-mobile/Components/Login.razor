@@ -15,7 +15,7 @@
 @inject HttpClient _httpClient
 @inject HttpClientProvider _httpClientProvider
 @inject NavigationManager NavigationManager
-@inject CatchUpdbContext _dbContext
+@inject CatchUpDbContext _dbContext
 @inject IBiometricAuthService BiometricAuth
 
 @if (isLoading)
@@ -242,8 +242,9 @@ else
                     await _dbContext.SaveAccessToken(tokens.AccessToken);
                     _httpClientProvider.SetAccessToken(tokens.AccessToken);
 
+#if ANDROID
                     await RegisterFirebaseToken(tokens.AccessToken);
-
+#endif
                     if (!canProceed)
                     {
                         return;
@@ -271,6 +272,7 @@ else
         }
     }
 
+#if ANDROID
     private async Task RegisterFirebaseToken(string accessToken)
     {
         await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
@@ -282,6 +284,7 @@ else
             deviceName = DeviceInfo.Name.ToString()
         });
     }
+#endif
 
     private async Task FetchAndSaveCitiesFromApi()
     {

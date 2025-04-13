@@ -5,10 +5,11 @@
 @using catch_up_mobile.Providers
 @using catch_up_mobile.SQLite
 @using catch_up_mobile.Services
+@using catch_up_mobile.Components
 @implements IDisposable
 
 @inject SignalRService SignalRService
-@inject CatchUpdbContext _dbContext
+@inject CatchUpDbContext _dbContext
 @inject HttpClientProvider _httpClientProvider
 @inject NotificationStateService NotificationStateService
 
@@ -57,9 +58,19 @@
 
                 @if (Notifications.Count < TotalCount)
                 {
-                    <div class="text-center">
-                        <button class="btn btn-primary m-3" @onclick="LoadMore">Load more...</button>
-                    </div>
+                    @if(loadingMore)
+                    {
+                        <div class="text-center">
+                            <p class="m-4">Loading more notifications...</p>
+                            <Loading />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <button class="btn btn-primary m-3" @onclick="LoadMore">Load more...</button>
+                        </div>
+                    }
                 }
                 else
                 {
@@ -78,6 +89,7 @@
     private int TotalCount { get; set; } = 0;
     private HttpClient _httpClient;
     private bool loading = true;
+    private bool loadingMore = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,12 +99,22 @@
         var notificationCount = await _dbContext.GetNotificationCount();
         TotalCount = notificationCount.TotalCount;
 
-        var connection = SignalRService.GetHubConncetion();
-        connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
+        try
         {
-            Notifications.Insert(0, notification);
-            await InvokeAsync(StateHasChanged);
-        });
+            var connection = SignalRService.GetHubConncetion();
+
+                connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
+                {
+                    Notifications.Insert(0, notification);
+                    await InvokeAsync(StateHasChanged);
+                });
+
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Cannot connect to singalR: " + ex);
+        }
+
 
         NotificationStateService.OnChange += async () => await InvokeAsync(StateHasChanged);
         loading = false;
@@ -100,24 +122,38 @@
 
     private async Task LoadMore()
     {
-        var page = Math.Floor((decimal)Notifications.Count / 20) + 1;
-        var response = await _httpClient.GetAsync($"/api/Notification/GetByUserToken?pageNumber={page}&pageSize=20");
-        if (response.IsSuccessStatusCode)
+        loadingMore = true;
+        try
         {
-            var notificationsResponse = await response.Content.ReadFromJsonAsync<NotificationResponse>();
+            var page = Math.Floor((decimal)Notifications.Count / 20) + 1;
+            var response = await _httpClient.GetAsync($"/api/Notification/GetByUserToken?pageNumber={page}&pageSize=20");
+            if (response.IsSuccessStatusCode)
+            {
+                var notificationsResponse = await response.Content.ReadFromJsonAsync<NotificationResponse>();
 
-            var existingIds = Notifications.Select(n => n.NotificationId).ToHashSet();
-            var moreNotifications = notificationsResponse.Notifications
-                .Where(n => !existingIds.Contains(n.NotificationId))
-                .ToList();
+                var existingIds = Notifications.Select(n => n.NotificationId).ToHashSet();
+                var moreNotifications = notificationsResponse.Notifications
+                    .Where(n => !existingIds.Contains(n.NotificationId))
+                    .ToList();
 
-            await _dbContext.AddNotificationsAsync(moreNotifications);
-            Notifications.AddRange(moreNotifications);
+                await _dbContext.AddNotificationsAsync(moreNotifications);
+                Notifications.AddRange(moreNotifications);
 
-            await _dbContext.SaveNotificationCount(notificationsResponse.TotalCount);
-            TotalCount = notificationsResponse.TotalCount;
-            await InvokeAsync(StateHasChanged);
+                await _dbContext.SaveNotificationCount(notificationsResponse.TotalCount);
+                TotalCount = notificationsResponse.TotalCount;
+                await InvokeAsync(StateHasChanged);
+            }
+            else 
+            { 
+                throw new HttpRequestException("server offline");
+            }
         }
+        catch(HttpRequestException ex)
+        {
+             Toast.Make($"Api is offline cannot load more notifications").Show();
+        }
+        loadingMore = false;
+
     }
 
     private void NavigateToSource(string source)

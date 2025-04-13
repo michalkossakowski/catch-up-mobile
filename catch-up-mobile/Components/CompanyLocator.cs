@@ -7,7 +7,7 @@ public static class CompanyLocator
     public static string locationMessage = "";
     public static Location location;
     private static List<CompanyCityDto> cities;
-    public static async Task GetLocation(CatchUpdbContext _dbContext)
+    public static async Task GetLocation(CatchUpDbContext _dbContext)
     {
         cities = await _dbContext.GetCitiesAsync();
         location = await Geolocation.GetLastKnownLocationAsync();

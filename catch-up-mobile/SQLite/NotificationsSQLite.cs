@@ -2,7 +2,7 @@
 
 namespace catch_up_mobile.SQLite
 {
-    public partial class CatchUpdbContext
+    public partial class CatchUpDbContext
     {
         //Notifications
         public async Task<List<NotificationDto>> GetNotificationsAsync()

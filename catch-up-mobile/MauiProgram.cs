@@ -74,7 +74,7 @@ namespace catch_up_mobile
             builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
 
             //SQL Lite
-            builder.Services.AddSingleton<CatchUpdbContext>(s => new CatchUpdbContext(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
+            builder.Services.AddSingleton<CatchUpDbContext>(s => new CatchUpDbContext(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
             // Biometric Auth
             builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();

@@ -13,9 +13,9 @@ namespace catch_up_mobile.Services
         private HubConnection? _connection;
         private string _hubUrl = "notificationHub";
 
-        private readonly CatchUpdbContext _dbContext;
+        private readonly CatchUpDbContext _dbContext;
 
-        public SignalRService(CatchUpdbContext dbContext, IConfiguration configuration)
+        public SignalRService(CatchUpDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _hubUrl = configuration["ApiSettings:Url"] + _hubUrl;

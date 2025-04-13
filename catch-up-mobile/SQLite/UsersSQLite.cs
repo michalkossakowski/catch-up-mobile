@@ -2,7 +2,7 @@
 
 namespace catch_up_mobile.SQLite
 {
-    partial class CatchUpdbContext
+    partial class CatchUpDbContext
     {
 
         //Users

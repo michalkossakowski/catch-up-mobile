@@ -7,8 +7,8 @@ namespace catch_up_mobile.Providers
     public class HttpClientProvider
     {
         private HttpClient _httpClient;
-        private CatchUpdbContext _dbContext;
-        public HttpClientProvider(CatchUpdbContext dbContext, IConfiguration configuration)
+        private CatchUpDbContext _dbContext;
+        public HttpClientProvider(CatchUpDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
 

@@ -3,11 +3,11 @@ using catch_up_mobile.Dtos;
 
 namespace catch_up_mobile.SQLite
 {
-    public partial class CatchUpdbContext
+    public partial class CatchUpDbContext
     {
         private readonly SQLiteAsyncConnection _database;
 
-        public CatchUpdbContext(string dbPath)
+        public CatchUpDbContext(string dbPath)
         {
             _database = new SQLiteAsyncConnection(dbPath);
 

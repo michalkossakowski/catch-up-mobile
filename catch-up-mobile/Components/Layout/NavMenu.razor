@@ -7,7 +7,7 @@
 @using catch_up_mobile.Services
 @using catch_up_mobile.Providers
 
-@inject CatchUpdbContext _dbContext
+@inject CatchUpDbContext _dbContext
 @inject NavigationManager NavigationManager
 @inject HttpClientProvider _httpClientProvider
 @inject SignalRService SignalRService
@@ -123,7 +123,7 @@
     {
         _httpClient = _httpClientProvider.GetHttpClient();
         await _httpClientProvider.SetAccessTokenFromDb();
-        
+
         UserDto user = await _dbContext.GetUserAsync();
         userName = $"{user.Name} {user.Surname}";
 
@@ -149,19 +149,19 @@
         try
         {
             await SignalRService.StartAsync();
+
+            _connection = SignalRService.GetHubConncetion();
+            _connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
+            {
+                NotificationStateService.SetUnreadNotification(true);
+                await _dbContext.AddNotificationAsync(notification);
+                await InvokeAsync(StateHasChanged);
+            });
         }
         catch(Exception ex)
         {
             Console.WriteLine("Cannot connect to singalR: " + ex);
         }
-
-        _connection = SignalRService.GetHubConncetion();
-        _connection.On<NotificationDto>("ReceiveNotification", async (notification) =>
-        {
-            NotificationStateService.SetUnreadNotification(true);
-            await _dbContext.AddNotificationAsync(notification);
-            await InvokeAsync(StateHasChanged);
-        });
 
         NotificationStateService.OnChange += async () => await InvokeAsync(StateHasChanged);
     }
@@ -182,14 +182,16 @@
             Console.WriteLine("Cannot disconnect to singalR: " + ex);
         }
 
-        try
-        {
-            await UnregisterFirebaseToken();
+#if ANDROID
+    try
+    {
+    await UnregisterFirebaseToken();
+    }
+    catch(Exception ex)
+    {
+    Console.WriteLine("Cannot unregister firebase token" + ex);
         }
-        catch(Exception ex)
-        {
-            Console.WriteLine("Cannot unregister firebase token" + ex);
-        }
+#endif
 
         await _dbContext.ClearUserAsync();
         await _dbContext.DeleteAccessToken();
@@ -198,13 +200,14 @@
         NavigationManager.NavigateTo("/", true);
     }
 
-
+#if ANDROID
     private async Task UnregisterFirebaseToken()
     {
-        await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
-        var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
-        await _httpClient.PostAsJsonAsync("api/Auth/UnregisterFirebaseToken", firebaseToken);
+    await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
+    var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+    await _httpClient.PostAsJsonAsync("api/Auth/UnregisterFirebaseToken", firebaseToken);
     }
+#endif
 
     private async Task FetctNotifcations()
     {
@@ -226,8 +229,16 @@
 
     private async Task MarkAsRead()
     {
-        NotificationStateService.SetUnreadNotification(false);
-        var respone = await _httpClient.GetAsync($"/api/Notification/ReadNotifications");
+        try
+        {
+            NotificationStateService.SetUnreadNotification(false);
+            var respone = await _httpClient.GetAsync($"/api/Notification/ReadNotifications");
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Failed to read notifications: {ex}");
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 }

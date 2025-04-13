@@ -3,7 +3,7 @@ using Microsoft.Maui.Controls.PlatformConfiguration;
 
 namespace catch_up_mobile.SQLite
 {
-    public partial class CatchUpdbContext
+    public partial class CatchUpDbContext
     {
         // AccessToken table (temporary - waiting for WELL-THOUGHT-OUT token support)
         // (this will probably never happen xd because Kristofer is lazy and stupid)

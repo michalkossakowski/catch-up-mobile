@@ -1,5 +1,4 @@
-﻿using catch_up_mobile.Components.Pages.Login;
-using catch_up_mobile.Dtos;
+﻿using catch_up_mobile.Dtos;
 using catch_up_mobile.SQLite;
 using CommunityToolkit.Maui.Alerts;
 public static class CompanyLocator

@@ -85,15 +85,15 @@
         //JEŚLI ON - AUTOMATYCZNY MOTYW (DRUGI SWITCH "DARK MODE" WTEDY JEST UKRYTY)
         //JEŚLI OFF - UŻYTKOWNIK WYBIERA MOTYW SWITCHEM "DARK MODE"
 
-        // if (DeviceInfo.Platform == DevicePlatform.Android)
-        // {
-        //     lightSensorService = ServiceProvider.GetService<ILightSensorService>();
-        //     if (lightSensorService != null)
-        //     {
-        //         lightSensorService.LightLevelChanged += OnLightLevelChanged;
-        //         StartSensor();
-        //     }
-        // }
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+        {
+            lightSensorService = ServiceProvider.GetService<ILightSensorService>();
+            if (lightSensorService != null)
+            {
+                lightSensorService.LightLevelChanged += OnLightLevelChanged;
+                StartSensor();
+            }
+        }
     }
 
     private void StartSensor()
@@ -104,18 +104,23 @@
         }
     }
 
-    private void OnLightLevelChanged(float level)
+    private async void OnLightLevelChanged(float level)
     {
-        lightLevel = level;
-        if (lightLevel > 150)
+        var isAuto = await JS.InvokeAsync<string>("localStorage.getItem", "autoTheme");
+        if (isAuto == "yes")
         {
-            JS.InvokeVoidAsync("changeTheme", "catchUpDay");
+            lightLevel = level;
+            if (lightLevel > 150)
+            {
+                JS.InvokeVoidAsync("changeTheme", "catchUpDay");
+            }
+            else
+            {
+                JS.InvokeVoidAsync("changeTheme", "catchUpNight");
+            }
+            InvokeAsync(StateHasChanged);
         }
-        else
-        {
-            JS.InvokeVoidAsync("changeTheme", "catchUpNight");
-        }
-        InvokeAsync(StateHasChanged);
+        
     }
 
     private void StopSensor()

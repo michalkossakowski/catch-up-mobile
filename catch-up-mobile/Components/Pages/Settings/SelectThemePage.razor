@@ -3,30 +3,53 @@
 <div class="setting-container">
     <h3>Theme:</h3>
     <div class="setting-row">
-        <div class="setting-name">
-            DARK MODE
-        </div>
-        <div class="form-check form-switch setting-switch">
-            <input class="form-check-input" type="checkbox" id="themeSwitch" @bind="isDarkMode" @bind:event="oninput" @onchange="ToggleTheme">
+
+        <div class="p-3 m-0 border-0 bd-example m-0 border-0">
+            <input type="radio" class="btn-check " name="options" id="option1" autocomplete="off" @onchange=' () => ToggleTheme("catchUpAuto")' checked="@(currentTheme == "catchUpAuto")">
+            <label class="btn btn-outline-success" for="option1">Auto</label>
+
+            <input type="radio" class="btn-check" name="options" id="option2" autocomplete="off" @onchange=' () => ToggleTheme("catchUpDay")' checked="@(currentTheme == "catchUpDay")">
+            <label class="btn btn-outline-success" for="option2">Light</label>
+
+            <input type="radio" class="btn-check" name="options" id="option3" autocomplete="off" @onchange=' () => ToggleTheme("catchUpNight")' checked="@(currentTheme == "catchUpNight")">
+            <label class="btn btn-outline-success" for="option3">Dark</label>
         </div>
     </div>
 </div>
 
 @code {
-    private bool isDarkMode = false;
+    private string currentTheme = "catchUpAuto";
 
     protected override async Task OnInitializedAsync()
     {
         var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
-        if (savedTheme == "catchUpNight")
+        var isAuto = await JS.InvokeAsync<string>("localStorage.getItem", "autoTheme");
+        if (isAuto == "yes")
         {
-            isDarkMode = true;
+            currentTheme = "catchUpAuto";
+        }
+        else if (savedTheme == "catchUpNight")
+        {
+            currentTheme = "catchUpNight";
+        }
+        else
+        {
+            currentTheme = "catchUpDay";
         }
     }
 
-    private async Task ToggleTheme()
+    private async Task ToggleTheme(string theme)
     {
-        string newTheme = isDarkMode ? "catchUpNight" : "catchUpDay";
-        await JS.InvokeVoidAsync("changeTheme", newTheme);
+        currentTheme = theme;
+        if (theme == "catchUpAuto")
+        {
+            await JS.InvokeAsync<string>("changeAutoTheme", "yes");
+        }
+        else
+        {
+            //string newTheme = isDarkMode ? "catchUpNight" : "catchUpDay";
+            await JS.InvokeVoidAsync("changeAutoTheme", "no");
+            await JS.InvokeVoidAsync("changeTheme", theme);
+        }
     }
 }

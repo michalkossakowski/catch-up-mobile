@@ -5,6 +5,10 @@ function changeTheme(theme) {
     localStorage.setItem("theme", theme);
 }
 
+function changeAutoTheme(auto) {
+    localStorage.setItem("autoTheme", auto);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     let savedTheme = localStorage.getItem("theme") || "catchUpNight";
     changeTheme(savedTheme);

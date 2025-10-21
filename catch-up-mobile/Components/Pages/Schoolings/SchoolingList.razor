@@ -14,7 +14,7 @@
 <div class="container mb-3">
     <h2 class="text-center">List of Schoolings</h2>
 
-    @if (fullSchoolings == null)
+    @if (schoolings == null)
     {
         <div class="text-center">
             <Loading/>
@@ -42,9 +42,7 @@
             }
             @for (int i = 0; i < filteredSchoolings.Count; i++)
             {
-                var schooling = filteredSchoolings[i].Schooling;
-                var category = filteredSchoolings[i].Category;
-
+                var schooling = filteredSchoolings[i];
                 var collapseId = $"collapse{i}";
                 var headingId = $"heading{i}";
 
@@ -56,14 +54,14 @@
                     </h2>
                     <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#accordionSchoolingList">
                         <div class="accordion-body">
-                            <p class="fs-3 fw-bold">Category: @category.Name</p>
+                            <p class="fs-3 fw-bold">Category: @availableCategories.FirstOrDefault(c => c.Id == schooling.CategoryId)?.Name</p>
                             <p class="fs-5 fw-bold">Priority: @schooling.Priority</p>
-                            <p>@schooling.Description</p>
+                            <p>@(string.IsNullOrWhiteSpace(schooling.ShortDescription) ? schooling.Description : schooling.ShortDescription)</p>
 
                             <div class="d-flex justify-content-between btn-group" role="group">
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#schoolingDetailsModal" @onclick="() => SeeDetails(schooling.Id)">See More</button>
                                 @if (hasAccess)
                                 {
+                                    <button type="button" class="btn btn-primary" @onclick="() => OpenSchoolingEdit(schooling.Id)">See More</button>
                                     <button type="button" class="btn btn-warning text-white" @onclick="() => OpenSchoolingEdit(schooling.Id)">Edit</button>
                                     <button type="button" class="btn btn-danger"  @onclick="() => DeleteSchooling(schooling.Id)">Delete</button>
                                 }
@@ -76,20 +74,14 @@
                 </div>
             }
         </div>
-        if (hasAccess)
-        {
-            <div class="d-grid mx-auto">
-                <button type="button" class="btn btn-success" @onclick="OpenSchoolingAdd">Add new Schooling</button>
-            </div>
-        }
+        
     }
-    <SchoolingDetailsModal fullSchooling="@selectedSchooling" />
+    
 </div>
 
 @code {
-    private List<FullSchoolingDto> fullSchoolings;
-    private FullSchoolingDto selectedSchooling;
-    private List<FullSchoolingDto> filteredSchoolings;
+    private List<SchoolingDto> schoolings;
+    private List<SchoolingDto> filteredSchoolings;
     private List<CategoryDto> availableCategories = new List<CategoryDto>();
 
     private string searchQuery = string.Empty;
@@ -122,11 +114,9 @@
     {
         try
         {
-            if (userPosition == "Admin" || userPosition == "Mentor")
-                fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull");
-            else
-                fullSchoolings = await _httpClient.GetFromJsonAsync<List<FullSchoolingDto>>($"api/schooling/GetAllFull/{userId}");
-
+            var mode = (userPosition == "Admin" || userPosition == "Mentor") ? "owned" : "all";
+            var response = await _httpClient.GetFromJsonAsync<PagedResponse<SchoolingDto>>($"api/Schooling/Get?pageNumber=1&pageSize=100&mode={mode}");
+            schoolings = response?.Items?.ToList() ?? new List<SchoolingDto>();
             FilterSchoolings();
         }
         catch (Exception ex)
@@ -151,19 +141,19 @@
     {
         if (string.IsNullOrWhiteSpace(searchQuery))
         {
-            filteredSchoolings = fullSchoolings.ToList();
+            filteredSchoolings = schoolings.ToList();
         }
         else
         {
-            filteredSchoolings = fullSchoolings
-                .Where(s => s.Schooling.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+            filteredSchoolings = schoolings
+                .Where(s => s.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
         if (selectedCategoryId.HasValue)
         {
             filteredSchoolings = filteredSchoolings
-                .Where(s => s.Category.Id == selectedCategoryId.Value)
+                .Where(s => s.CategoryId == selectedCategoryId.Value)
                 .ToList();
         }
     }
@@ -176,9 +166,7 @@
         NavigationManager.NavigateTo($"/schooling/edit/{schoolingId}");
     }
     private void SeeDetails(int schoolingId)
-    {
-        selectedSchooling = fullSchoolings.FirstOrDefault(s => s.Schooling.Id == schoolingId);
-    }
+    {    }
     private async Task DeleteSchooling(int schoolingId)
     {
         var popup = new ConfirmPopup($"Do you want to delete this schooling?", async (isConfirmed) =>
@@ -187,15 +175,13 @@
             {
                 await _httpClient.DeleteAsync($"api/schooling/DeleteSchooling/{schoolingId}");
 
-                var itemToRemove = fullSchoolings.FirstOrDefault(fs => fs.Schooling.Id == schoolingId);
-                if (itemToRemove != null)
+                var index = schoolings.FindIndex(s => s.Id == schoolingId);
+                if (index >= 0)
                 {
-                    fullSchoolings.Remove(itemToRemove);
+                    schoolings.RemoveAt(index);
                     await Toast.Make("Schooling successfully deleted").Show();
                     FilterSchoolings();
-
                     StateHasChanged();
-                    FilterSchoolings();
                 }
             }
         });

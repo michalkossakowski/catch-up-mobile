@@ -47,7 +47,7 @@
                                 {
                                     <strong>Receiver:</strong>
                                 }
-                                <ul><li>@feedback.UserName</li></ul>
+                                <ul><li>@GetDisplayName(feedback)</li></ul>
                                 
                                 <strong>Description:</strong>
                                 <ul><li>@feedback.Description</li></ul>
@@ -157,11 +157,7 @@
                 isAdmin = !ResUser;
             }
 
-            string endpoint = isAdmin ?
-                $"api/feedback/GetByReceiverId/{userId}" :
-                $"api/feedback/GetBySenderId/{userId}";
-
-            var feedbackResponse = await _httpClient.GetAsync(endpoint);
+            var feedbackResponse = await _httpClient.GetAsync("api/feedback/GetAll");
             if (feedbackResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 feedbacks = new List<FeedbackDto>();
@@ -226,5 +222,24 @@
         {
             await Toast.Make("Failed to delete feedback. Please try again.").Show();
         }
+    }
+
+    private string GetDisplayName(FeedbackDto feedback)
+    {
+        Guid targetUserId = isAdmin ? feedback.SenderId : feedback.ReceiverId;
+
+        var user = users.FirstOrDefault(u => u.Id == targetUserId);
+        if (user != null)
+        {
+            var name = (user.Name ?? string.Empty).Trim();
+            var surname = (user.Surname ?? string.Empty).Trim();
+            var full = string.Join(" ", new[] { name, surname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            if (!string.IsNullOrWhiteSpace(full)) return full;
+            if (!string.IsNullOrWhiteSpace(user.Email)) return user.Email;
+        }
+
+        if (!string.IsNullOrWhiteSpace(feedback.UserName)) return feedback.UserName;
+
+        return targetUserId.ToString();
     }
 }

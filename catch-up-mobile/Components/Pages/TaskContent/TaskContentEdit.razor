@@ -1,9 +1,17 @@
 @page "/taskcontent/edit/{Id:int}"
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject catch_up_mobile.SQLite.CatchUpDbContext _dbContext
 @using catch_up_mobile.Dtos
+@using catch_up_mobile.SQLite
+@using System.Net
+@using System.Linq
 
 <div class="container">
+    @if (blocked)
+    {
+        <div class="alert alert-warning mt-3">You don't have permissions to edit Task Content.</div>
+    }
     @if (taskContent == null)
     {
         <div class="text-center">
@@ -81,19 +89,48 @@
     private List<CategoryDto> categories = new List<CategoryDto>();
     private List<MaterialDto> materials = new List<MaterialDto>();
     private string? errorMessage;
+    private bool blocked = false;
 
     protected override async Task OnInitializedAsync()
     {
         try 
         {
             errorMessage = null;
-            var tasksContentTask = Http.GetFromJsonAsync<TaskContentDto>($"api/TaskContent/GetById/{Id}");
+            try
+            {
+                var user = await _dbContext.GetUserAsync();
+                var role = await Http.GetStringAsync($"api/User/GetRole/{user.Id}");
+                if (role == "Newbie")
+                {
+                    blocked = true;
+                    NavigationManager.NavigateTo("/taskcontent");
+                    return;
+                }
+            }
+            catch { }
             var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
             var materialsTask = Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
 
-            taskContent = await tasksContentTask;
-            categories = await categoriesTask;
-            materials = await materialsTask;
+            var response = await Http.GetAsync($"api/TaskContent/GetById/{Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                taskContent = await response.Content.ReadFromJsonAsync<TaskContentDto>();
+            }
+            else if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                var all = await _dbContext.GetTaskContentsAsync();
+                taskContent = all?.FirstOrDefault(t => t.Id == Id);
+                errorMessage = taskContent == null
+                    ? "Task content not found on server."
+                    : "Loaded from offline cache (server copy not found).";
+            }
+            else
+            {
+                errorMessage = $"Failed to load task content: {response.StatusCode}";
+            }
+
+            categories = await categoriesTask ?? new List<CategoryDto>();
+            materials = await materialsTask ?? new List<MaterialDto>();
         }
         catch (Exception ex)
         {

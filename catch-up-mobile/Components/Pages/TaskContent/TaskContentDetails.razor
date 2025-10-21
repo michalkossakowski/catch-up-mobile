@@ -1,6 +1,12 @@
 @page "/taskcontent/{Id:int}"
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject CatchUpDbContext _dbContext
+@using System.Net.Http.Json
+@using System.Text.Json
+@using catch_up_mobile.SQLite
+@using catch_up_mobile.Components.Pages.MaterialManager
+@using catch_up_mobile.Dtos
 @using catch_up_mobile.Dtos
 
 <div class="container">
@@ -33,19 +39,23 @@
                 <p class="card-text">@taskContent.Description</p>
 
                 <h5 class="card-title mt-4">Category</h5>
-                <p class="card-text">@(category?.Name ?? "No category")</p>
+                <p class="card-text">@(categoryName ?? "No category")</p>
 
-                <h5 class="card-title mt-4">Material</h5>
-                <p class="card-text">
-                    @if (taskContent.MaterialsId.HasValue)
-                    {
-                        @(material?.Name ?? "No material attached")
-                    }
-                    else
-                    {
-                        <span>No material attached</span>
-                    }
-                </p>
+                @if (taskContent.MaterialsId.HasValue && taskContent.MaterialsId.Value > 0)
+                {
+                    <h5 class="card-title mt-4">Additional Materials</h5>
+                    <div class="m-2">
+                        <MaterialItem materialId="@taskContent.MaterialsId.Value"
+                                      showRemoveFile="false"
+                                      showDownloadFile="true"
+                                      showAddingFile="false" />
+                    </div>
+                }
+                else
+                {
+                    <h5 class="card-title mt-4">Material</h5>
+                    <span>No material attached</span>
+                }
             </div>
         </div>
     }
@@ -54,9 +64,14 @@
 @code {
     [Parameter]
     public int Id { get; set; }
+    
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "categoryName")]
+    public string? CategoryNameFromQuery { get; set; }
 
     private TaskContentDto? taskContent;
-    private CategoryDto? category;
+    private List<CategoryDto> categories = new();
+    private string? categoryName;
     private MaterialDto? material;
     private string? errorMessage;
 
@@ -64,22 +79,39 @@
     {
         try 
         {
-            taskContent = await Http.GetFromJsonAsync<TaskContentDto>($"api/TaskContent/GetById/{Id}");
-            if (taskContent != null)
+            var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
+            var taskContentTask = Http.GetFromJsonAsync<TaskContentDto>($"api/TaskContent/GetById/{Id}");
+            
+            await Task.WhenAll(categoriesTask, taskContentTask);
+            
+            categories = await categoriesTask ?? new List<CategoryDto>();
+            taskContent = await taskContentTask;
+            
+            if (taskContent == null)
             {
-                if (taskContent.CategoryId > 0)
-                {
-                    category = await Http.GetFromJsonAsync<CategoryDto>($"api/Category/GetById/{taskContent.CategoryId}");
-                }
-                if (taskContent.MaterialsId.HasValue)
-                {
-                    material = await Http.GetFromJsonAsync<MaterialDto>($"api/Material/GetById/{taskContent.MaterialsId}");
-                }
+                errorMessage = "Task content not found";
+                return;
+            }
+
+            if (taskContent.CategoryId.HasValue && taskContent.CategoryId.Value > 0)
+            {
+                categoryName = categories.FirstOrDefault(c => c.Id == taskContent.CategoryId.Value)?.Name;
+            }
+        }
+        catch (HttpRequestException)
+        {
+            var all = await _dbContext.GetTaskContentsAsync();
+            taskContent = all?.FirstOrDefault(t => t.Id == Id);
+            categories = await _dbContext.GetCategoriesAsync();
+            
+            if (taskContent != null && taskContent.CategoryId.HasValue && taskContent.CategoryId.Value > 0)
+            {
+                categoryName = categories.FirstOrDefault(c => c.Id == taskContent.CategoryId.Value)?.Name;
             }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error loading task content: {ex.Message}");
+            errorMessage = "Failed to load task content.";
         }
     }
 

@@ -127,7 +127,7 @@
     {
         try
         {
-            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/material/GetWithFiles/{materialId.Value}");
+            material = await _httpClient.GetFromJsonAsync<MaterialDto>($"api/Material/GetWithFiles/{materialId.Value}");
         }
         catch (Exception ex)
         {

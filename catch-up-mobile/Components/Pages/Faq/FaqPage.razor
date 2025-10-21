@@ -152,11 +152,12 @@
             var userRoleResonse = await _httpClient.GetAsync($"api/User/GetRole/{user.Id}");
             isAdmin = await userRoleResonse.Content.ReadAsStringAsync() == "Admin";
 
-            var response = await _httpClient.GetAsync("api/faq/GetAll", HttpCompletionOption.ResponseHeadersRead);
+            var response = await _httpClient.GetAsync("api/Faq/GetAll/1/50", HttpCompletionOption.ResponseHeadersRead);
 
             if (response.IsSuccessStatusCode)
             {
-                faqs = await response.Content.ReadFromJsonAsync<List<FaqDto>>();
+                var payload = await response.Content.ReadFromJsonAsync<FaqListResponse>();
+                faqs = payload?.faqs ?? new List<FaqDto>();
                 await _dbContext.DeleteAllFaqsAsync();
                 foreach (var faq in faqs)
                     await _dbContext.AddFaqAsync(faq);
@@ -248,5 +249,13 @@
     private async Task ThereIsNothingWeCanDo()
     {
         await Microsoft.Maui.ApplicationModel.Launcher.OpenAsync("https://www.youtube.com/shorts/ZfsjEyXobTI");
+    }
+}
+
+@code {
+    private class FaqListResponse
+    {
+        public List<FaqDto> faqs { get; set; }
+        public int totalCount { get; set; }
     }
 }

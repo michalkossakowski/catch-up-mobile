@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using catch_up_mobile.Services;
 using catch_up_mobile.Providers;
+using Microsoft.Maui.Devices;
 
 #if ANDROID
 using Plugin.Fingerprint;
@@ -56,6 +57,20 @@ namespace catch_up_mobile
                 var configuration = sp.GetRequiredService<IConfiguration>();
                 var baseAddress = configuration["ApiSettings:Url"];
 
+                if (!string.IsNullOrWhiteSpace(baseAddress) && DeviceInfo.Platform == DevicePlatform.Android)
+                {
+                    try
+                    {
+                        var uri = new Uri(baseAddress);
+                        if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Equals("127.0.0.1"))
+                        {
+                            var uriBuilder = new UriBuilder(uri) { Host = "10.0.2.2" };
+                            baseAddress = uriBuilder.Uri.ToString();
+                        }
+                    }
+                    catch { }
+                }
+
                 var httpClientHandler = new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
@@ -92,6 +107,9 @@ namespace catch_up_mobile
             //NotificationStateService
             builder.Services.AddSingleton<NotificationStateService>();
             
+            // Firebase services
+            builder = RegisterFirebaseServices(builder);
+
             // ----------- Custom Section End -----------
             return builder.Build();
         }

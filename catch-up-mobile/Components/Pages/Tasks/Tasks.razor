@@ -107,23 +107,36 @@ else
         {
             var response = await _httpClient.GetAsync($"api/User/GetRole/{currentUser.Id}");
             userRole = await response.Content.ReadAsStringAsync();
+
             if (userRole.ToLower() == "mentor")
             {
                 fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByAssigningId/{currentUser.Id}");
-                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByMentor/{currentUser.Id}");
             }
             else if (userRole.ToLower() == "newbie")
             {
                 fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasksByNewbieId/{currentUser.Id}");
-                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetAssignmentsByNewbie/{currentUser.Id}");
             }
-
             else if (userRole.ToLower() == "admin")
             {
                 fullTasks = await _httpClient.GetFromJsonAsync<List<FullTask>>($"api/Task/GetAllFullTasks");
-                availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/User/GetAll");
             }
 
+            try
+            {
+                if (userRole.ToLower() == "mentor")
+                {
+                    availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetUsers?role=Newbie&assigned=true&relatedId={currentUser.Id}") ?? new List<UserDto>();
+                }
+                else if (userRole.ToLower() == "newbie")
+                {
+                    availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/NewbieMentor/GetUsers?role=Mentor&assigned=true&relatedId={currentUser.Id}") ?? new List<UserDto>();
+                }
+                else if (userRole.ToLower() == "admin")
+                {
+                    availableUsers = await _httpClient.GetFromJsonAsync<List<UserDto>>($"api/User/GetAll") ?? new List<UserDto>();
+                }
+            }
+            catch { }
 
         }
         catch (HttpRequestException ex)

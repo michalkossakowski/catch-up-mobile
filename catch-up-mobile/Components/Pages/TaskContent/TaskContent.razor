@@ -19,6 +19,16 @@
     </div>
 }
 
+@if (awaitingRole)
+{
+    <div class="text-center"><Loading/></div>
+}
+else if (!canEdit)
+{
+    <div class="alert alert-info">You don't have permissions to add Task Content.</div>
+}
+else
+{
 <EditForm Model="@newTaskContent" OnValidSubmit="@HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -56,7 +66,8 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Add Task Content</button>
-</EditForm>
+    </EditForm>
+}
 
 <h4 class="mt-5">Task Content List</h4>
 @if (taskContents == null)
@@ -124,15 +135,18 @@ else
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center gap-3">
-                                <button class="btn btn-link p-0" @onclick="() => HandleView(task.Id)">
+                                <button class="btn btn-link p-0" @onclick="() => HandleView(task.Id, task.CategoryId)">
                                     <i class="bi bi-eye text-info"></i>
                                 </button>
-                                <button class="btn btn-link p-0" @onclick="() => HandleEdit(task)">
-                                    <i class="bi bi-pencil-square text-primary"></i>
-                                </button>
-                                <button class="btn btn-link p-0" @onclick="() => HandleDelete(task.Id)">
-                                    <i class="bi bi-trash text-danger"></i>
-                                </button>
+                                @if (canEdit)
+                                {
+                                    <button class="btn btn-link p-0" @onclick="() => HandleEdit(task)">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    </button>
+                                    <button class="btn btn-link p-0" @onclick="() => HandleDelete(task.Id)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                }
                             </div>
                         </td>
                     </tr>
@@ -154,6 +168,8 @@ else
     private const int ShakeCooldownMs = 1000;
     private bool offlineMode = false;
     private bool isApplicationActive = true;
+    private bool canEdit = false;
+    private bool awaitingRole = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,20 +180,42 @@ else
             
             taskContents = null;
             
+            try
+            {
+                var user = await _dbContext.GetUserAsync();
+                var role = await Http.GetStringAsync($"api/User/GetRole/{user.Id}");
+                canEdit = role != null && role != "Newbie";
+            }
+            catch
+            {
+                canEdit = false;
+            }
+            finally
+            {
+                awaitingRole = false;
+            }
+
             var categoriesTask = Http.GetFromJsonAsync<List<CategoryDto>>("api/Category/GetAll");
             var materialsTask = Http.GetFromJsonAsync<List<MaterialDto>>("api/Material/GetAllMaterials");
-            var tasksTask = Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+            var tasksPagedTask = Http.GetFromJsonAsync<TaskContentPagedResponse>("api/TaskContent/GetAll/1/100");
             
-            await Task.WhenAll(categoriesTask, materialsTask, tasksTask);
+            await Task.WhenAll(categoriesTask, materialsTask, tasksPagedTask);
             
-            categories = await categoriesTask;
-            materials = await materialsTask;
-            taskContents = await tasksTask;
+            categories = await categoriesTask ?? new List<CategoryDto>();
+            materials = await materialsTask ?? new List<MaterialDto>();
+            var tasksPaged = await tasksPagedTask;
+            taskContents = tasksPaged?.taskContents ?? new List<TaskContentDto>();
 
             await _dbContext.DeleteAllTaskContentsAsync();
             foreach (var task in taskContents)
             {
                 await _dbContext.AddTaskContentAsync(task);
+            }
+            
+            await _dbContext.DeleteAllCategoriesAsync();
+            foreach (var cat in categories)
+            {
+                await _dbContext.AddCategoryAsync(cat);
             }
             
             offlineMode = false;
@@ -263,7 +301,8 @@ else
     {
         try
         {
-            taskContents = await Http.GetFromJsonAsync<List<TaskContentDto>>("api/TaskContent/GetAll");
+            var paged = await Http.GetFromJsonAsync<TaskContentPagedResponse>("api/TaskContent/GetAll/1/100");
+            taskContents = paged?.taskContents ?? new List<TaskContentDto>();
             if (taskContents == null)
             {
                 taskContents = new List<TaskContentDto>();
@@ -345,9 +384,23 @@ else
         }
     }
 
-    private void HandleView(int taskId)
+    private void HandleView(int taskId, int? categoryId)
     {
-        NavigationManager.NavigateTo($"/taskcontent/{taskId}");
+        var categoryName = categoryId.HasValue ? categories.FirstOrDefault(c => c.Id == categoryId.Value)?.Name : null;
+        var url = $"/taskcontent/{taskId}";
+        if (!string.IsNullOrEmpty(categoryName))
+        {
+            url += $"?categoryName={Uri.EscapeDataString(categoryName)}";
+        }
+        NavigationManager.NavigateTo(url);
+    }
+}
+
+@code {
+    private class TaskContentPagedResponse
+    {
+        public List<TaskContentDto> taskContents { get; set; }
+        public int totalCount { get; set; }
     }
 }
 

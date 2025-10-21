@@ -101,8 +101,15 @@ else
         {
             try
             {
-                schoolingModel.Id = editedSchoolingId;
-                var response = await _httpClient.PutAsJsonAsync($"api/schooling/editSchooling", schoolingModel);
+                var dto = new SchoolingDto
+                {
+                    Id = editedSchoolingId.Value,
+                    CategoryId = int.Parse(schoolingModel.CategoryId),
+                    Title = schoolingModel.Title,
+                    ShortDescription = schoolingModel.Description,
+                    Priority = schoolingModel.Priority
+                };
+                var response = await _httpClient.PutAsJsonAsync($"api/Schooling/EditSchooling", dto);
                 if (response.IsSuccessStatusCode)
                     await Toast.Make("Schooling successfully edited").Show();
                 else
@@ -117,24 +124,8 @@ else
         {
             try
             {
-                var schoolingDto = new SchoolingDto
-                    {
-                        CategoryId = int.Parse(schoolingModel.CategoryId),
-                        Title = schoolingModel.Title,
-                        Description = schoolingModel.Description,
-                        Priority = schoolingModel.Priority,
-                        CreatorId = _dbContext.GetUserAsync().Result.Id
-                    };
-                var response = await _httpClient.PostAsJsonAsync($"api/schooling/create", schoolingDto);
-                if (response.IsSuccessStatusCode)
-                {
-                    var responseContent = await response.Content.ReadFromJsonAsync<FullSchoolingDto>();
-                    editedSchoolingId = responseContent.Schooling.Id;
-                    await Toast.Make("Schooling successfully added").Show();
-
-                }
-                else
-                    await Toast.Make($"Error in creating schooling ").Show();
+                await Toast.Make("Creating schooling is not supported at this time").Show();
+                NavigationManager.NavigateTo("/schoolingList");
             }
             catch (Exception ex)
             {
@@ -164,13 +155,13 @@ else
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<FullSchoolingDto>($"api/Schooling/GetFull/{editedSchoolingId}");
-            editedSchooling = response.Schooling;
+            var response = await _httpClient.GetFromJsonAsync<SchoolingDto>($"api/Schooling/Get/{editedSchoolingId}");
+            editedSchooling = response;
 
             schoolingModel.Title = editedSchooling.Title;
             schoolingModel.CategoryId = editedSchooling.CategoryId.ToString();
             schoolingModel.Priority = editedSchooling.Priority;
-            schoolingModel.Description = editedSchooling.Description;
+            schoolingModel.Description = editedSchooling.ShortDescription;
         }
         catch (Exception ex)
         {

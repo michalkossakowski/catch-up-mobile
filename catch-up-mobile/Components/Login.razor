@@ -243,7 +243,10 @@ else
                     _httpClientProvider.SetAccessToken(tokens.AccessToken);
 
 #if ANDROID
-                    await RegisterFirebaseToken(tokens.AccessToken);
+                    _ = Task.Run(async () =>
+                    {
+                        try { await RegisterFirebaseToken(tokens.AccessToken); } catch { }
+                    });
 #endif
                     if (!canProceed)
                     {

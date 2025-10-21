@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject CatchUpDbContext _dbContext
+@inject catch_up_mobile.Providers.HttpClientProvider _httpClientProvider
 
 @using catch_up_mobile.SQLite
 @using System.Text.Json
@@ -83,6 +84,13 @@ else
     {
         isAuthenticated = false;
         isFingerprintAuthorized = true;
+        try
+        {
+            await _httpClientProvider.SetAccessTokenFromDb();
+            var user = await _dbContext.GetUserAsync();
+            isAuthenticated = user != null;
+        }
+        catch { }
         isLoading = false;
     }
 

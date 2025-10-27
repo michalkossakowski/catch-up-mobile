@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Localization
 @using Plugin.Firebase.CloudMessaging
 @using System.Net.Http.Headers
 @using catch_up_mobile.Components.Pages.MaterialManager
@@ -12,6 +13,7 @@
 @inject HttpClientProvider _httpClientProvider
 @inject SignalRService SignalRService
 @inject NotificationStateService NotificationStateService
+@inject IStringLocalizer<catch_up_mobile.Resources.Localization.Strings> L
 
 <div class="top-row navbar navbar-dark">
     <div class="container-fluid navbar-box">
@@ -33,42 +35,42 @@
     <nav class="flex-column nav-items-box">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <i class="bi-house-door-fill fs-5" aria-hidden="true"></i> <span>Home</span> 
+                <i class="bi-house-door-fill fs-5" aria-hidden="true"></i> <span>@L["Home"]</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="notifications" @onclick="MarkAsRead">
-                <i class="bi-bell fs-5" aria-hidden="true"></i> <span>Notifications</span>
+                <i class="bi-bell fs-5" aria-hidden="true"></i> <span>@L["Notifications"]</span>
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="faq">
-                <i class="bi-question-circle fs-5" aria-hidden="true"></i> <span>FAQ</span> 
+                <i class="bi-question-circle fs-5" aria-hidden="true"></i> <span>@L["FAQ"]</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="taskcontent">
-                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>Task Content</span> 
+                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>@L["TaskContent"]</span> 
             </NavLink>
         </div>
         @if (!(userPosition == "Newbie"))
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="assigntask">
-                    <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> <span>Assign Task</span> 
+                    <i class="bi-person-plus-fill fs-5" aria-hidden="true"></i> <span>@L["AssignTask"]</span> 
                 </NavLink>
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="tasks">
-                <i class="bi-person-lines-fill fs-5" aria-hidden="true"></i> <span>Tasks</span> 
+                <i class="bi-person-lines-fill fs-5" aria-hidden="true"></i> <span>@L["Tasks"]</span> 
             </NavLink>
         </div>
         @if (userPosition == "Admin" || userPosition == "HR")
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="assignment">
-                    <i class="bi-link fs-5" aria-hidden="true"></i> <span>Assignment</span> 
+                    <i class="bi-link fs-5" aria-hidden="true"></i> <span>@L["Assignment"]</span> 
                 </NavLink>
             </div>
         }
@@ -76,41 +78,41 @@
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="addmaterial">
-                    <i class="bi-journal-plus fs-5" aria-hidden="true"></i> <span>Add Material</span> 
+                    <i class="bi-journal-plus fs-5" aria-hidden="true"></i> <span>@L["AddMaterial"]</span> 
                 </NavLink> 
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="schoolingList">
-                <i class="bi-book fs-5" aria-hidden="true"></i> <span>Schoolings</span> 
+                <i class="bi-book fs-5" aria-hidden="true"></i> <span>@L["Schoolings"]</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="feedback">
-                <i class="bi-pencil-square fs-5" aria-hidden="true"></i> <span>Feedbacks</span> 
+                <i class="bi-pencil-square fs-5" aria-hidden="true"></i> <span>@L["Feedbacks"]</span> 
             </NavLink>
         </div>
         @if (userPosition == "Admin")
         {        
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="localization-panel-admin">
-                    <i class="bi-geo-alt-fill fs-5" aria-hidden="true"></i> <span>Localization Panel</span> 
+                    <i class="bi-geo-alt-fill fs-5" aria-hidden="true"></i> <span>@L["LocalizationPanel"]</span> 
                 </NavLink>
             </div>
         }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="newbies">
-                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>Newbies List</span> 
+                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>@L["NewbiesList"]</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
-                <i class="bi-gear fs-5" aria-hidden="true"></i> <span>Settings</span> 
+                <i class="bi-gear fs-5" aria-hidden="true"></i> <span>@L["Settings"]</span> 
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" @onclick="HandleLogout">
-                <i class="bi-box-arrow-right fs-5" aria-hidden="true"></i> <span>Logout</span> 
+                <i class="bi-box-arrow-right fs-5" aria-hidden="true"></i> <span>@L["Logout"]</span> 
             </NavLink>
         </div>
     </nav>

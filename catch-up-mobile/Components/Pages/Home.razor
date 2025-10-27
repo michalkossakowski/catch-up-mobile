@@ -1,11 +1,15 @@
 ﻿@page "/"
 @inject IServiceProvider ServiceProvider
 @inject IJSRuntime JS
+@using Microsoft.Extensions.Localization
+@using System.Globalization
 @using catch_up_mobile.SQLite
+@using catch_up_mobile.Services
 @inject CatchUpDbContext _dbContext
+@inject IStringLocalizer<catch_up_mobile.Resources.Localization.Strings> L
 
 <div class="container text-center">
-    <h2>Welcome in catchUp</h2>
+    <h2>@L["Welcome"]</h2>
 </div>
 
 <div>
@@ -17,10 +21,10 @@
                     <img src="images/task-batman-image.jpg" class="card-img-top" alt="Tasks Image" />
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="bi bi-list-task fs-4"></i> Tasks
+                            <i class="bi bi-list-task fs-4"></i> @L["Tasks"]
                         </h5>
-                        <p class="card-text">Manage and track your tasks.</p>
-                        <a class="btn btn-primary" href="tasks">Go to Tasks</a>
+                        <p class="card-text">@L["TaskDesc"]</p>
+                        <a class="btn btn-primary" href="tasks">@L["GoTask"]</a>
                     </div>
                 </div>
             </div>
@@ -31,10 +35,10 @@
                     <img src="images/schooling-batman-image.jpg" class="card-img-top" alt="Schoolings Image" />
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="bi bi-book fs-4"></i> Schoolings
+                            <i class="bi bi-book fs-4"></i> @L["Schoolings"]
                         </h5>
-                        <p class="card-text">Access your schooling list and details.</p>
-                        <a class="btn btn-primary" href="schoolingList">Go to Schoolings</a>
+                        <p class="card-text">@L["SchoolingsDesc"]</p>
+                        <a class="btn btn-primary" href="schoolingList">@L["GoSchoolings"]</a>
                     </div>
                 </div>
             </div>
@@ -45,10 +49,10 @@
                     <img src="images/feedback-batman-image.jpg" class="card-img-top" alt="Feedbacks Image" />
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="bi bi-pencil-square fs-4"></i> Feedbacks
+                            <i class="bi bi-pencil-square fs-4"></i> @L["Feedbacks"]
                         </h5>
-                        <p class="card-text">Submit and view feedbacks.</p>
-                        <a class="btn btn-primary" href="feedback">Go to Feedbacks</a>
+                        <p class="card-text">@L["FeedbacksDesc"]</p>
+                        <a class="btn btn-primary" href="feedback">@L["GoFeedbacks"]</a>
                     </div>
                 </div>
             </div>
@@ -59,10 +63,10 @@
                     <img src="images/faq-batman-image.jpg" class="card-img-top" alt="FAQ Image" />
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="bi bi-question-circle fs-4"></i> FAQ
+                            <i class="bi bi-question-circle fs-4"></i> @L["FAQ"]
                         </h5>
-                        <p class="card-text">Find answers to frequently asked questions.</p>
-                        <a class="btn btn-primary" href="faq">Go to FAQ</a>
+                        <p class="card-text">@L["FAQDesc"]</p>
+                        <a class="btn btn-primary" href="faq">@L["GoFAQ"]</a>
                     </div>
                 </div>
             </div>
@@ -79,11 +83,6 @@
         var fontSize = await _dbContext.GetFontSizeAsync();
         if (fontSize != null)
             await JS.InvokeVoidAsync("changeFontSize", fontSize.FontSize);
-
-        //WERYK DODAJ SWITCHA W SETTINGACH KTÓRY WŁ/WYŁ NASŁUCHIWANIE CZUJNIKA ŚWIATŁA
-        //MOŻESZ GO NAZAWAĆ AUTO THEME
-        //JEŚLI ON - AUTOMATYCZNY MOTYW (DRUGI SWITCH "DARK MODE" WTEDY JEST UKRYTY)
-        //JEŚLI OFF - UŻYTKOWNIK WYBIERA MOTYW SWITCHEM "DARK MODE"
 
         if (DeviceInfo.Platform == DevicePlatform.Android)
         {
@@ -137,5 +136,5 @@
         {
             lightSensorService.LightLevelChanged -= OnLightLevelChanged;
         }
-    }
+    }  
 }

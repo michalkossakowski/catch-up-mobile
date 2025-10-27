@@ -2,7 +2,8 @@
 @inject NavigationManager NavigationManager
 @inject CatchUpDbContext _dbContext
 @inject catch_up_mobile.Providers.HttpClientProvider _httpClientProvider
-
+@inject IStringLocalizer<catch_up_mobile.Resources.Localization.Strings> L
+@using Microsoft.Extensions.Localization
 @using catch_up_mobile.SQLite
 @using System.Text.Json
 @using catch_up_mobile.Dtos
@@ -43,23 +44,23 @@ else
                     <div class="d-flex justify-content-around align-items-center">
                         <NavLink class="nav-link text-center flex-fill" href="tasks">
                             <i class="bi bi-list-task fs-4"></i>
-                            <div>Tasks</div>
+                            <div>@L["Tasks"]</div>
                         </NavLink>
                         <NavLink class="nav-link text-center flex-fill" href="schoolingList">
                             <i class="bi bi-book fs-4"></i>
-                            <div>Schoolings</div>
+                            <div>@L["Schoolings"]</div>
                         </NavLink>
                         <NavLink class="nav-link text-center flex-fill" href="/" Match="NavLinkMatch.All">
                             <i class="bi bi-house-door fs-4"></i>
-                            <div>Home</div>
+                            <div>@L["Home"]</div>
                         </NavLink>
                         <NavLink class="nav-link text-center flex-fill" href="feedback">
                             <i class="bi bi-pencil-square fs-4"></i>
-                            <div>Feedback</div>
+                            <div>@L["Feedbacks"]</div>
                         </NavLink>
                         <NavLink class="nav-link text-center flex-fill" href="faq">
                             <i class="bi bi-question-circle fs-4"></i>
-                            <div>FAQ</div>
+                            <div>@L["FAQ"]</div>
                         </NavLink>
                     </div>
                 </div>

@@ -10,6 +10,7 @@ using System.Reflection;
 using catch_up_mobile.Services;
 using catch_up_mobile.Providers;
 using Microsoft.Maui.Devices;
+using System.Globalization;
 
 #if ANDROID
 using Plugin.Fingerprint;
@@ -109,6 +110,11 @@ namespace catch_up_mobile
             
             // Firebase services
             builder = RegisterFirebaseServices(builder);
+
+            //Localisation
+            builder.Services.AddLocalization();
+            //CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+            //CultureInfo.CurrentUICulture = new CultureInfo("pl-PL");
 
             // ----------- Custom Section End -----------
             return builder.Build();

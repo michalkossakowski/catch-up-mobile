@@ -407,3 +407,86 @@ i {
 .unread-card{
     border: 2px solid #DB91D1 !important;
 }
+
+[data-bs-theme=catchUpDay] .task-card {
+    border: 2px solid #e0e0e0;
+    background: white;
+}
+
+[data-bs-theme=catchUpDay] .task-card-body {
+    background: white;
+}
+
+[data-bs-theme=catchUpDay] .task-title {
+    color: #333;
+}
+
+[data-bs-theme=catchUpDay] .task-user {
+    color: #666;
+}
+
+[data-bs-theme=catchUpDay] .task-status {
+    border-top: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme=catchUpDay] .shadow-sm {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme=catchUpDay] .task-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-bs-theme=catchUpNight] .task-card {
+    border: 2px solid #3a3a3a;
+    background: #1e1e1e;
+}
+
+[data-bs-theme=catchUpNight] .task-card-body {
+    background: #1e1e1e;
+}
+
+[data-bs-theme=catchUpNight] .task-title {
+    color: #e0e0e0;
+}
+
+[data-bs-theme=catchUpNight] .task-user {
+    color: #b0b0b0;
+}
+
+[data-bs-theme=catchUpNight] .task-status {
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme=catchUpNight] .shadow-sm {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme=catchUpNight] .task-card:hover {
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-bs-theme=catchUpNight] .status-todo {
+    background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+    color: #b0b0b0;
+}
+
+[data-bs-theme=catchUpNight] .status-inprogress {
+    background: linear-gradient(135deg, #2980b9 0%, #1f6ea8 100%);
+    color: white;
+}
+
+[data-bs-theme=catchUpNight] .status-toreview {
+    background: linear-gradient(135deg, #d68910 0%, #c57711 100%);
+    color: white;
+}
+
+[data-bs-theme=catchUpNight] .status-reopen {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    color: white;
+}
+
+[data-bs-theme=catchUpNight] .status-done {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+}

@@ -33,7 +33,7 @@ else
             <option value="">Select Status</option>
             @foreach (var status in Enum.GetValues(typeof(StatusEnum)))
             {
-                <option value="@status">@status</option>
+                <option value="@status">@GetStatusText((StatusEnum)status)</option>
             }
         </select>
         <select class="form-select" @onchange="OnUserChanged">
@@ -60,16 +60,18 @@ else
                 <option value="@user.Id">@user.Name @user.Surname</option>
             }
         </select>
-        <div>
+        <div class="tasks-container">
             @foreach (var card in filteredCards)
             {
-                <div class="card">
-                    <div class="card-body" @onclick="() => GoToDedails(card.FullTask.Id)">
-                        <h5 class="card-title">@card.FullTask.Title</h5>
-                        <p class="card-text">@card.FullTask.NewbieName</p>
+                <div class="task-card shadow-sm" @onclick="() => GoToDedails(card.FullTask.Id)">
+                    <div class="task-card-body">
+                        <h5 class="task-title">@card.FullTask.Title</h5>
+                        <p class="task-user">
+                            <i class="bi bi-person-fill"></i> @card.FullTask.NewbieName
+                        </p>
                     </div>
-                    <div class="card-footer">
-                        @(getStatus(card.FullTask.Status))
+                    <div class="task-status @GetStatusClass(card.FullTask.Status)">
+                        <span class="status-text">@GetStatusText(card.FullTask.Status)</span>
                     </div>
                 </div>
             }
@@ -256,20 +258,38 @@ else
 
         }
     }
-    private string getStatus(StatusEnum status)
+    private string GetStatusText(StatusEnum status)
     {
         switch (status)
         {
             case StatusEnum.ToDo:
-                return "to do";
+                return "To Do";
             case StatusEnum.InProgress:
-                return "in progress";
+                return "In Progress";
             case StatusEnum.ToReview:
-                return "to review";
+                return "To Review";
             case StatusEnum.ReOpen:
-                return "reopen";
+                return "Reopen";
             case StatusEnum.Done:
-                return "done";
+                return "Done";
+        }
+        return "";
+    }
+
+    private string GetStatusClass(StatusEnum status)
+    {
+        switch (status)
+        {
+            case StatusEnum.ToDo:
+                return "status-todo";
+            case StatusEnum.InProgress:
+                return "status-inprogress";
+            case StatusEnum.ToReview:
+                return "status-toreview";
+            case StatusEnum.ReOpen:
+                return "status-reopen";
+            case StatusEnum.Done:
+                return "status-done";
         }
         return "";
     }
@@ -280,7 +300,99 @@ else
     }
 }
 <style>
-    .form-select{
-        margin-bottom: 10px
+    .form-select {
+        margin-bottom: 10px;
     }
+
+    .tasks-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 15px;
+        margin-bottom: 80px;
+    }
+
+    .task-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        background: white;
+    }
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .task-card-body {
+        padding: 16px;
+        background: white;
+    }
+
+    .task-title {
+        margin: 0 0 12px 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .task-user {
+        margin: 0;
+        color: #666;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .task-user i {
+        font-size: 1rem;
+    }
+
+    .task-status {
+        padding: 12px 16px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-top: 2px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .status-text {
+        display: inline-block;
+    }
+
+    /* Status colors */
+    .status-todo {
+        background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        color: #555;
+    }
+
+    .status-inprogress {
+        background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+        color: white;
+    }
+
+    .status-toreview {
+        background: linear-gradient(135deg, #ffb74d 0%, #ffa726 100%);
+        color: white;
+    }
+
+    .status-reopen {
+        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        color: white;
+    }
+
+    .status-done {
+        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+        color: white;
+    }
+
+    .shadow-sm {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
 </style>

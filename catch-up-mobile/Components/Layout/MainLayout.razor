@@ -2,6 +2,8 @@
 @inject NavigationManager NavigationManager
 @inject CatchUpDbContext _dbContext
 @inject catch_up_mobile.Providers.HttpClientProvider _httpClientProvider
+@inject HttpClient _httpClient
+@inject IConfiguration _configuration
 @inject IStringLocalizer<catch_up_mobile.Resources.Localization.Strings> L
 @using Microsoft.Extensions.Localization
 @using catch_up_mobile.SQLite
@@ -12,6 +14,10 @@
 @using CommunityToolkit.Maui.Alerts
 @using Plugin.Fingerprint
 @using Plugin.Fingerprint.Abstractions
+@using System.IdentityModel.Tokens.Jwt
+@using System.Net.Http.Json
+@using Microsoft.Extensions.Configuration
+@using Microsoft.Maui.Devices
 
 @if (isLoading)
 {
@@ -87,12 +93,135 @@ else
         isFingerprintAuthorized = true;
         try
         {
-            await _httpClientProvider.SetAccessTokenFromDb();
             var user = await _dbContext.GetUserAsync();
-            isAuthenticated = user != null;
+            if (user == null)
+            {
+                isAuthenticated = false;
+                isLoading = false;
+                return;
+            }
+
+            var accessToken = await _dbContext.GetAccessToken();
+            var refreshToken = await _dbContext.GetRefreshToken();
+
+            if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+            {
+                isAuthenticated = false;
+                isLoading = false;
+                return;
+            }
+
+            if (IsTokenExpired(accessToken))
+            {
+                var refreshed = await TryRefreshToken(refreshToken);
+                if (!refreshed)
+                {
+                    await ClearUserData();
+                    isAuthenticated = false;
+                    isLoading = false;
+                    return;
+                }
+            }
+
+            isAuthenticated = true;
         }
-        catch { }
+        catch
+        {
+            isAuthenticated = false;
+        }
         isLoading = false;
     }
 
+    private bool IsTokenExpired(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var expClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "exp");
+
+            if (expClaim != null && long.TryParse(expClaim.Value, out long expSeconds))
+            {
+                var expiryDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds).DateTime;
+                return DateTime.UtcNow >= expiryDate.AddMinutes(-1);
+            }
+
+            return true;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private async Task<bool> TryRefreshToken(string refreshToken)
+    {
+        try
+        {
+            var baseAddress = _configuration["ApiSettings:Url"];
+            
+            if (!string.IsNullOrWhiteSpace(baseAddress) && DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                try
+                {
+                    var uri = new Uri(baseAddress);
+                    if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Equals("127.0.0.1"))
+                    {
+                        var uriBuilder = new UriBuilder(uri) { Host = "10.0.2.2" };
+                        baseAddress = uriBuilder.Uri.ToString();
+                    }
+                }
+                catch { }
+            }
+            
+            var httpClientHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+            };
+            
+            using var httpClient = new HttpClient(httpClientHandler) 
+            { 
+                BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("API Url not found in configuration"))
+            };
+            
+            var content = new StringContent($"\"{refreshToken}\"", System.Text.Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync("api/Auth/Refresh", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var tokens = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                if (tokens != null)
+                {
+                    await _dbContext.SaveAccessToken(tokens.AccessToken);
+                    await _dbContext.SaveRefreshToken(tokens.RefreshToken);
+                    JwtTokens.SetTokens(tokens.AccessToken, tokens.RefreshToken);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task ClearUserData()
+    {
+        try
+        {
+            await _dbContext.ClearUserAsync();
+            await _dbContext.DeleteAccessToken();
+            await _dbContext.DeleteRefreshToken();
+            JwtTokens.ClearTokens();
+        }
+        catch { }
+    }
+
+    private class TokenResponse
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+    }
 }

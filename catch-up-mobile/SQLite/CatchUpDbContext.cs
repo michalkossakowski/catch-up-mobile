@@ -25,6 +25,7 @@ namespace catch_up_mobile.SQLite
             _database.CreateTableAsync<CategoryDto>().Wait();
             _database.CreateTableAsync<MaterialDto>().Wait();
             _database.CreateTableAsync<AccessTokenDto>().Wait();
+            _database.CreateTableAsync<RefreshTokenDto>().Wait();
             _database.CreateTableAsync<NotificationDto>().Wait();
             _database.CreateTableAsync<NotificationCount>().Wait();
         }      

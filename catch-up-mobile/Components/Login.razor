@@ -118,6 +118,16 @@ else
 
         if (result.Authenticated)
         {
+            var accessToken = await _dbContext.GetAccessToken();
+            var refreshToken = await _dbContext.GetRefreshToken();
+            
+            if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+            {
+                isLoading = false;
+                errorMessage = "Session expired. Please login again.";
+                return;
+            }
+            
             UserDto user = await _dbContext.GetUserAsync();
             if (await CheckLocationAccess(user.Id))
             {
@@ -241,12 +251,12 @@ else
                     var canProceed = await SaveUserAsync(tokens);
 
                     await _dbContext.SaveAccessToken(tokens.AccessToken);
-                    _httpClientProvider.SetAccessToken(tokens.AccessToken);
+                    await _dbContext.SaveRefreshToken(tokens.RefreshToken);
 
 #if ANDROID
                     _ = Task.Run(async () =>
                     {
-                        try { await RegisterFirebaseToken(tokens.AccessToken); } catch { }
+                        try { await RegisterFirebaseToken(); } catch { }
                     });
 #endif
                     if (!canProceed)
@@ -277,11 +287,10 @@ else
     }
 
 #if ANDROID
-    private async Task RegisterFirebaseToken(string accessToken)
+    private async Task RegisterFirebaseToken()
     {
         await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
         var firebaseToken = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         await _httpClient.PostAsJsonAsync("api/Auth/RegisterFirebaseToken", new
         {
             firebaseToken = firebaseToken,

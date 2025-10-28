@@ -100,11 +100,14 @@
                 </NavLink>
             </div>
         }
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="newbies">
-                <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>@L["NewbiesList"]</span> 
-            </NavLink>
-        </div>
+        @if (userPosition != "Newbie")
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="newbies">
+                    <i class="bi-list-task fs-5" aria-hidden="true"></i> <span>@L["NewbiesList"]</span> 
+                </NavLink>
+            </div>
+        }
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
                 <i class="bi-gear fs-5" aria-hidden="true"></i> <span>@L["Settings"]</span> 
@@ -127,7 +130,6 @@
     protected override async Task OnInitializedAsync()
     {
         _httpClient = _httpClientProvider.GetHttpClient();
-        await _httpClientProvider.SetAccessTokenFromDb();
 
         UserDto user = await _dbContext.GetUserAsync();
         userName = $"{user.Name} {user.Surname}";
@@ -200,7 +202,9 @@
 
         await _dbContext.ClearUserAsync();
         await _dbContext.DeleteAccessToken();
+        await _dbContext.DeleteRefreshToken();
         await _dbContext.DeleteAllNotificationsAsync();
+        JwtTokens.ClearTokens();
 
         NavigationManager.NavigateTo("/", true);
     }

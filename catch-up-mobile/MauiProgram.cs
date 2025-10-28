@@ -11,6 +11,7 @@ using catch_up_mobile.Services;
 using catch_up_mobile.Providers;
 using Microsoft.Maui.Devices;
 using System.Globalization;
+using catch_up_mobile.Handlers;
 
 #if ANDROID
 using Plugin.Fingerprint;
@@ -52,10 +53,13 @@ namespace catch_up_mobile
 #endif
             //----------- Custom Section Start -----------
 
-            // HttpClient with ignoring SSL
+            builder.Services.AddSingleton<CatchUpDbContext>(s => new CatchUpDbContext(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
+            builder.Services.AddTransient<catch_up_mobile.Handlers.AuthenticationHandler>();
+            
             builder.Services.AddSingleton(sp =>
             {
                 var configuration = sp.GetRequiredService<IConfiguration>();
+                var dbContext = sp.GetRequiredService<CatchUpDbContext>();
                 var baseAddress = configuration["ApiSettings:Url"];
 
                 if (!string.IsNullOrWhiteSpace(baseAddress) && DeviceInfo.Platform == DevicePlatform.Android)
@@ -77,7 +81,12 @@ namespace catch_up_mobile
                     ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
                 };
 
-                return new HttpClient(httpClientHandler)
+                var authHandler = new catch_up_mobile.Handlers.AuthenticationHandler(dbContext, configuration)
+                {
+                    InnerHandler = httpClientHandler
+                };
+
+                return new HttpClient(authHandler)
                 {
                     BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("API Url not found in configuration"))
                 };
@@ -88,9 +97,6 @@ namespace catch_up_mobile
 
             //File Saver
             builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
-
-            //SQL Lite
-            builder.Services.AddSingleton<CatchUpDbContext>(s => new CatchUpDbContext(Path.Combine(FileSystem.AppDataDirectory, "CatchUpLocal.db3")));
 
             // Biometric Auth
             builder.Services.AddSingleton<IBiometricAuthService, BiometricAuthService>();
